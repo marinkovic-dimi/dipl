@@ -1,5 +1,3 @@
-"""Configuration module for the AI classifier project."""
-
 from .data_config import DataConfig
 from .tokenization_config import TokenizationConfig
 from .model_config import ModelConfig

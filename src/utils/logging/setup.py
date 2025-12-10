@@ -1,5 +1,3 @@
-"""Logging setup and utility functions."""
-
 import logging
 import sys
 from pathlib import Path
@@ -16,19 +14,6 @@ def setup_logging(
     experiment_name: Optional[str] = None,
     colored_output: bool = True
 ) -> logging.Logger:
-    """
-    Set up logging configuration.
-
-    Args:
-        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        log_to_file: Whether to log to file
-        log_dir: Directory for log files
-        experiment_name: Name for log file
-        colored_output: Whether to use colored console output
-
-    Returns:
-        Configured logger instance
-    """
     log_dir_path = Path(log_dir)
     log_dir_path.mkdir(exist_ok=True)
 
@@ -67,15 +52,6 @@ def setup_logging(
 
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
-    """
-    Get logger instance.
-
-    Args:
-        name: Logger name (defaults to calling module)
-
-    Returns:
-        Logger instance
-    """
     if name is None:
         import inspect
         frame = inspect.currentframe().f_back

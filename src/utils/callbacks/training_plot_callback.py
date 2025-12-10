@@ -1,5 +1,3 @@
-"""Training plot callback for visualizing training progress."""
-
 import keras
 import numpy as np
 import pandas as pd
@@ -8,7 +6,6 @@ from pathlib import Path
 
 
 class TrainingPlotCallback(keras.callbacks.Callback):
-    """Callback to plot training progress after each epoch."""
 
     def __init__(
         self,
@@ -16,14 +13,6 @@ class TrainingPlotCallback(keras.callbacks.Callback):
         plot_name: str = "training_progress.png",
         csv_name: str = "training_log.csv"
     ):
-        """
-        Initialize training plot callback.
-
-        Args:
-            output_dir: Directory to save plots and logs
-            plot_name: Filename for the plot
-            csv_name: Filename for the CSV log
-        """
         super().__init__()
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -32,17 +21,13 @@ class TrainingPlotCallback(keras.callbacks.Callback):
         self.history = []
 
     def on_epoch_end(self, epoch, logs=None):
-        """Save metrics and update plot after each epoch."""
         logs = logs or {}
 
-        # Get learning rate
         try:
             lr = float(self.model.optimizer.learning_rate)
         except TypeError:
-            # If learning rate is a schedule, get current value
             lr = float(self.model.optimizer.learning_rate(self.model.optimizer.iterations))
 
-        # Store metrics
         epoch_data = {
             'epoch': epoch + 1,
             'learning_rate': lr,
@@ -50,18 +35,14 @@ class TrainingPlotCallback(keras.callbacks.Callback):
         }
         self.history.append(epoch_data)
 
-        # Save to CSV
         df = pd.DataFrame(self.history)
         df.to_csv(self.csv_path, index=False)
 
-        # Update plot
         self._plot_training_progress(df)
 
     def _plot_training_progress(self, df: pd.DataFrame):
-        """Create training progress plots."""
         epochs = df['epoch']
 
-        # Determine which metrics are available
         has_top_k = 'top_k_acc' in df.columns or 'val_top_k_acc' in df.columns
 
         if has_top_k:
@@ -70,7 +51,6 @@ class TrainingPlotCallback(keras.callbacks.Callback):
             fig, axes = plt.subplots(1, 2, figsize=(12, 5))
             axes = axes.reshape(1, -1)
 
-        # Plot 1: Accuracy
         ax1 = axes[0, 0] if has_top_k else axes[0, 0]
         if 'sparse_categorical_accuracy' in df.columns:
             ax1.plot(epochs, df['sparse_categorical_accuracy'], 'b-', label='Train Accuracy')
@@ -82,7 +62,6 @@ class TrainingPlotCallback(keras.callbacks.Callback):
         ax1.legend()
         ax1.grid(True, alpha=0.3)
 
-        # Plot 2: Loss
         ax2 = axes[0, 1] if has_top_k else axes[0, 1]
         if 'loss' in df.columns:
             ax2.plot(epochs, df['loss'], 'b-', label='Train Loss')
@@ -95,7 +74,6 @@ class TrainingPlotCallback(keras.callbacks.Callback):
         ax2.grid(True, alpha=0.3)
 
         if has_top_k:
-            # Plot 3: Top-K Accuracy
             ax3 = axes[1, 0]
             if 'top_k_acc' in df.columns:
                 ax3.plot(epochs, df['top_k_acc'], 'b-', label='Train Top-3 Acc')
@@ -107,7 +85,6 @@ class TrainingPlotCallback(keras.callbacks.Callback):
             ax3.legend()
             ax3.grid(True, alpha=0.3)
 
-            # Plot 4: Learning Rate
             ax4 = axes[1, 1]
             if 'learning_rate' in df.columns:
                 ax4.plot(epochs, df['learning_rate'], 'g-', label='Learning Rate')

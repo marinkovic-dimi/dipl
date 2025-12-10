@@ -1,12 +1,9 @@
-"""Data balancing configuration."""
-
 from dataclasses import dataclass, field
 from typing import Dict
 
 
 @dataclass
 class BalancingConfig:
-    """Configuration for data balancing strategies."""
     strategy: str = "adaptive"
 
     target_threshold: int = 3000

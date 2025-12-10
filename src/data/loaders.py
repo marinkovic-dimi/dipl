@@ -7,32 +7,15 @@ from ..utils import LoggerMixin
 
 
 class DataLoader(ABC, LoggerMixin):
-    """Abstract base class for data loaders."""
 
     def __init__(self, verbose: bool = True):
-        """
-        Initialize data loader.
-
-        Args:
-            verbose: Whether to log information about loaded data
-        """
         self.verbose = verbose
 
     @abstractmethod
     def load(self, source: Union[str, Path]) -> pd.DataFrame:
-        """
-        Load data from source.
-
-        Args:
-            source: Data source (file path, URL, etc.)
-
-        Returns:
-            Loaded DataFrame
-        """
         pass
 
     def _log_data_info(self, data: pd.DataFrame, source: str) -> None:
-        """Log information about loaded data."""
         if self.verbose:
             self.logger.info(f"Loaded data from {source}")
             self.logger.info(f"Shape: {data.shape}")
@@ -46,33 +29,12 @@ class DataLoader(ABC, LoggerMixin):
 
 
 class JSONDataLoader(DataLoader):
-    """Data loader for JSON files."""
 
     def __init__(self, verbose: bool = True, **kwargs):
-        """
-        Initialize JSON data loader.
-
-        Args:
-            verbose: Whether to log information about loaded data
-            **kwargs: Additional arguments for pandas.read_json
-        """
         super().__init__(verbose)
         self.json_kwargs = kwargs
 
     def load(self, source: Union[str, Path]) -> pd.DataFrame:
-        """
-        Load data from JSON file.
-
-        Args:
-            source: Path to JSON file
-
-        Returns:
-            Loaded DataFrame
-
-        Raises:
-            FileNotFoundError: If source file doesn't exist
-            ValueError: If JSON format is invalid
-        """
         source_path = Path(source)
 
         if not source_path.exists():
@@ -95,41 +57,13 @@ class JSONDataLoader(DataLoader):
 
 
 class DatabaseDataLoader(DataLoader):
-    """Data loader for database-style JSON files (with nested structure)."""
 
     def __init__(self, data_key: str = "data", metadata_key: Optional[str] = None, verbose: bool = True):
-        """
-        Initialize database data loader.
-
-        Args:
-            data_key: Key in JSON structure containing the data
-            metadata_key: Optional key for metadata
-            verbose: Whether to log information about loaded data
-        """
         super().__init__(verbose)
         self.data_key = data_key
         self.metadata_key = metadata_key
 
     def load(self, source: Union[str, Path]) -> pd.DataFrame:
-        """
-        Load data from database-style JSON file.
-
-        Expected format:
-        {
-            "metadata": {...},
-            "data": [{"id": 1, "text": "..."}, ...]
-        }
-
-        Args:
-            source: Path to JSON file
-
-        Returns:
-            Loaded DataFrame
-
-        Raises:
-            FileNotFoundError: If source file doesn't exist
-            ValueError: If JSON format is invalid or data key not found
-        """
         source_path = Path(source)
 
         if not source_path.exists():
@@ -167,33 +101,12 @@ class DatabaseDataLoader(DataLoader):
 
 
 class CSVDataLoader(DataLoader):
-    """Data loader for CSV files."""
 
     def __init__(self, verbose: bool = True, **kwargs):
-        """
-        Initialize CSV data loader.
-
-        Args:
-            verbose: Whether to log information about loaded data
-            **kwargs: Additional arguments for pandas.read_csv
-        """
         super().__init__(verbose)
         self.csv_kwargs = kwargs
 
     def load(self, source: Union[str, Path]) -> pd.DataFrame:
-        """
-        Load data from CSV file.
-
-        Args:
-            source: Path to CSV file
-
-        Returns:
-            Loaded DataFrame
-
-        Raises:
-            FileNotFoundError: If source file doesn't exist
-            ValueError: If CSV format is invalid
-        """
         source_path = Path(source)
 
         if not source_path.exists():
@@ -216,20 +129,6 @@ class CSVDataLoader(DataLoader):
 
 
 def create_data_loader(source: Union[str, Path], loader_type: str = "auto", **kwargs) -> DataLoader:
-    """
-    Factory function to create appropriate data loader.
-
-    Args:
-        source: Path to data file
-        loader_type: Type of loader ('auto', 'json', 'database', 'csv')
-        **kwargs: Additional arguments for the loader
-
-    Returns:
-        Configured data loader
-
-    Raises:
-        ValueError: If loader_type is not supported
-    """
     source_path = Path(source)
 
     if loader_type == "auto":
@@ -264,18 +163,6 @@ def validate_dataframe(
     text_column: str,
     class_column: str
 ) -> None:
-    """
-    Validate loaded DataFrame.
-
-    Args:
-        data: DataFrame to validate
-        required_columns: List of required column names
-        text_column: Name of text column
-        class_column: Name of class column
-
-    Raises:
-        ValueError: If validation fails
-    """
     missing_columns = set(required_columns) - set(data.columns)
     if missing_columns:
         raise ValueError(f"Missing required columns: {missing_columns}")

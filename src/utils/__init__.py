@@ -1,5 +1,3 @@
-"""Utilities module for the AI classifier project."""
-
 from .config import (
     Config,
     ConfigManager,

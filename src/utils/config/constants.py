@@ -1,5 +1,3 @@
-"""Constants for the AI classifier project."""
-
 SERBIAN_STOP_WORDS = [
     'baš', 'bez', 'biće', 'bio', 'biti', 'blizu', 'broj', 'dana', 'danas', 'doći',
     'dobar', 'dobiti', 'dok', 'dole', 'došao', 'drugi', 'duž', 'dva', 'često', 'čiji',

@@ -9,18 +9,9 @@ logger = get_logger(__name__)
 
 
 class SerializationManager:
-    """Manager for various file serialization operations."""
 
     @staticmethod
     def save_json(data: Any, file_path: Union[str, Path], **kwargs) -> None:
-        """
-        Save data to JSON file.
-
-        Args:
-            data: Data to save
-            file_path: Path to save file
-            **kwargs: Additional arguments for json.dump
-        """
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -34,15 +25,6 @@ class SerializationManager:
 
     @staticmethod
     def load_json(file_path: Union[str, Path]) -> Any:
-        """
-        Load data from JSON file.
-
-        Args:
-            file_path: Path to JSON file
-
-        Returns:
-            Loaded data
-        """
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"JSON file not found: {file_path}")
@@ -55,13 +37,6 @@ class SerializationManager:
 
     @staticmethod
     def save_pickle(data: Any, file_path: Union[str, Path]) -> None:
-        """
-        Save data to pickle file.
-
-        Args:
-            data: Data to save
-            file_path: Path to save file
-        """
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -72,15 +47,6 @@ class SerializationManager:
 
     @staticmethod
     def load_pickle(file_path: Union[str, Path]) -> Any:
-        """
-        Load data from pickle file.
-
-        Args:
-            file_path: Path to pickle file
-
-        Returns:
-            Loaded data
-        """
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"Pickle file not found: {file_path}")
@@ -98,15 +64,6 @@ class SerializationManager:
         orient: str = 'records',
         lines: bool = True
     ) -> None:
-        """
-        Save DataFrame to JSON file.
-
-        Args:
-            df: DataFrame to save
-            file_path: Path to save file
-            orient: JSON orientation
-            lines: Whether to use line-delimited JSON
-        """
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -119,17 +76,6 @@ class SerializationManager:
         orient: str = 'records',
         lines: bool = True
     ) -> pd.DataFrame:
-        """
-        Load DataFrame from JSON file.
-
-        Args:
-            file_path: Path to JSON file
-            orient: JSON orientation
-            lines: Whether to expect line-delimited JSON
-
-        Returns:
-            Loaded DataFrame
-        """
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"JSON file not found: {file_path}")
@@ -146,19 +92,6 @@ class SerializationManager:
         base_path: Union[str, Path],
         suffix: str = ""
     ) -> Tuple[Path, Path, Path]:
-        """
-        Save train/validation/test DataFrames.
-
-        Args:
-            train: Training DataFrame
-            val: Validation DataFrame
-            test: Test DataFrame
-            base_path: Base path for files
-            suffix: Optional suffix for filenames
-
-        Returns:
-            Tuple of saved file paths
-        """
         base_path = Path(base_path)
         base_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -180,16 +113,6 @@ class SerializationManager:
         base_path: Union[str, Path],
         suffix: str = ""
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Load train/validation/test DataFrames.
-
-        Args:
-            base_path: Base path for files
-            suffix: Optional suffix for filenames
-
-        Returns:
-            Tuple of loaded DataFrames
-        """
         base_path = Path(base_path)
         suffix = f"_{suffix}" if suffix else ""
 
@@ -206,30 +129,12 @@ class SerializationManager:
 
 
 def ensure_dir(path: Union[str, Path]) -> Path:
-    """
-    Ensure directory exists, create if it doesn't.
-
-    Args:
-        path: Directory path
-
-    Returns:
-        Path object
-    """
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def get_file_size(file_path: Union[str, Path]) -> str:
-    """
-    Get human-readable file size.
-
-    Args:
-        file_path: Path to file
-
-    Returns:
-        File size string
-    """
     file_path = Path(file_path)
     if not file_path.exists():
         return "File not found"

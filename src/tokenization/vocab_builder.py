@@ -5,16 +5,8 @@ from ..utils.logging import LoggerMixin
 
 
 class VocabularyBuilder(LoggerMixin):
-    """Builder for vocabulary analysis and management."""
 
     def __init__(self, min_frequency: int = 2, max_vocab_size: Optional[int] = None):
-        """
-        Initialize vocabulary builder.
-
-        Args:
-            min_frequency: Minimum frequency for words to be included
-            max_vocab_size: Maximum vocabulary size (None for unlimited)
-        """
         self.min_frequency = min_frequency
         self.max_vocab_size = max_vocab_size
 
@@ -23,16 +15,6 @@ class VocabularyBuilder(LoggerMixin):
         texts: pd.Series,
         special_tokens: Optional[List[str]] = None
     ) -> Dict[str, int]:
-        """
-        Build word-level vocabulary from texts.
-
-        Args:
-            texts: Series of texts
-            special_tokens: Special tokens to include
-
-        Returns:
-            Vocabulary mapping (word -> id)
-        """
         special_tokens = special_tokens or []
 
         self.logger.info("Building word vocabulary...")
@@ -76,16 +58,6 @@ class VocabularyBuilder(LoggerMixin):
         texts: pd.Series,
         vocabulary: Dict[str, int]
     ) -> Dict[str, float]:
-        """
-        Analyze vocabulary coverage on texts.
-
-        Args:
-            texts: Series of texts to analyze
-            vocabulary: Vocabulary mapping
-
-        Returns:
-            Coverage statistics
-        """
         vocab_words = set(vocabulary.keys())
         total_words = 0
         covered_words = 0
@@ -117,16 +89,6 @@ class VocabularyBuilder(LoggerMixin):
         texts: pd.Series,
         vocabulary: Optional[Dict[str, int]] = None
     ) -> Dict:
-        """
-        Get comprehensive vocabulary statistics.
-
-        Args:
-            texts: Series of texts
-            vocabulary: Optional vocabulary for coverage analysis
-
-        Returns:
-            Statistics dictionary
-        """
         all_words = []
         text_lengths = []
 
@@ -168,17 +130,6 @@ class VocabularyBuilder(LoggerMixin):
         vocab_sizes: List[int],
         target_coverage: float = 0.95
     ) -> Tuple[int, Dict]:
-        """
-        Find optimal vocabulary size for target coverage.
-
-        Args:
-            texts: Series of texts
-            vocab_sizes: List of vocabulary sizes to test
-            target_coverage: Target coverage rate
-
-        Returns:
-            Tuple of (optimal_vocab_size, coverage_results)
-        """
         self.logger.info(f"Finding optimal vocabulary size for {target_coverage:.1%} coverage")
 
         coverage_results = {}
@@ -209,14 +160,6 @@ class VocabularyBuilder(LoggerMixin):
         output_path: str,
         format: str = "json"
     ) -> None:
-        """
-        Export vocabulary to file.
-
-        Args:
-            vocabulary: Vocabulary mapping
-            output_path: Output file path
-            format: Export format ('json', 'txt')
-        """
         from ..utils.serialization import SerializationManager
 
         if format == "json":
@@ -232,16 +175,6 @@ class VocabularyBuilder(LoggerMixin):
         self.logger.info(f"Vocabulary exported to {output_path}")
 
     def load_vocabulary(self, input_path: str, format: str = "json") -> Dict[str, int]:
-        """
-        Load vocabulary from file.
-
-        Args:
-            input_path: Input file path
-            format: File format ('json', 'txt')
-
-        Returns:
-            Vocabulary mapping
-        """
         from ..utils.serialization import SerializationManager
 
         if format == "json":

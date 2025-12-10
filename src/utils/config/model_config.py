@@ -1,11 +1,8 @@
-"""Model configuration."""
-
 from dataclasses import dataclass
 
 
 @dataclass
 class ModelConfig:
-    """Configuration for the transformer model."""
     embedding_dim: int = 256
     num_heads: int = 8
     num_layers: int = 4

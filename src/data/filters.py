@@ -6,28 +6,12 @@ from ..utils import LoggerMixin
 
 
 class DataFilter(ABC, LoggerMixin):
-    """Abstract base class for data filters."""
 
     def __init__(self, verbose: bool = True):
-        """
-        Initialize data filter.
-
-        Args:
-            verbose: Whether to log filtering information
-        """
         self.verbose = verbose
 
     @abstractmethod
     def filter(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Apply filter to DataFrame.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Filtered DataFrame
-        """
         pass
 
     def _log_filter_results(
@@ -36,7 +20,6 @@ class DataFilter(ABC, LoggerMixin):
         filtered_data: pd.DataFrame,
         filter_name: str
     ) -> None:
-        """Log filtering results."""
         if self.verbose:
             original_size = len(original_data)
             filtered_size = len(filtered_data)
@@ -49,7 +32,7 @@ class DataFilter(ABC, LoggerMixin):
 
 
 class GroupSizeFilter(DataFilter):
-    """Filter groups based on minimum and maximum sample counts."""
+
 
     def __init__(
         self,
@@ -59,16 +42,6 @@ class GroupSizeFilter(DataFilter):
         exception_groups: Optional[List] = None,
         verbose: bool = True
     ):
-        """
-        Initialize group size filter.
-
-        Args:
-            class_column: Name of the class/group column
-            min_samples: Minimum samples per group
-            max_samples: Maximum samples per group (None for no limit)
-            exception_groups: Groups to keep regardless of size
-            verbose: Whether to log filtering information
-        """
         super().__init__(verbose)
         self.class_column = class_column
         self.min_samples = min_samples
@@ -76,15 +49,6 @@ class GroupSizeFilter(DataFilter):
         self.exception_groups = set(exception_groups or [])
 
     def filter(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Filter groups by size constraints.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Filtered DataFrame
-        """
         original_data = data.copy()
 
         group_counts = data[self.class_column].value_counts()
@@ -126,7 +90,6 @@ class GroupSizeFilter(DataFilter):
 
 
 class OstaloGroupFilter(DataFilter):
-    """Filter to remove 'ostalo' (other) groups."""
 
     def __init__(
         self,
@@ -136,16 +99,6 @@ class OstaloGroupFilter(DataFilter):
         group_id_column: str = 'category_id',
         verbose: bool = True
     ):
-        """
-        Initialize ostalo group filter.
-
-        Args:
-            class_column: Name of the class/group column
-            ostalo_groups_file: Path to file containing ostalo group IDs
-            separator: CSV separator
-            group_id_column: Column name in ostalo file containing group IDs
-            verbose: Whether to log filtering information
-        """
         super().__init__(verbose)
         self.class_column = class_column
         self.ostalo_groups_file = Path(ostalo_groups_file)
@@ -153,7 +106,6 @@ class OstaloGroupFilter(DataFilter):
         self.group_id_column = group_id_column
 
     def _load_ostalo_groups(self) -> Set:
-        """Load ostalo group IDs from file."""
         if not self.ostalo_groups_file.exists():
             self.logger.warning(f"Ostalo groups file not found: {self.ostalo_groups_file}")
             return set()
@@ -181,15 +133,6 @@ class OstaloGroupFilter(DataFilter):
             return set()
 
     def filter(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Filter out ostalo groups.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Filtered DataFrame without ostalo groups
-        """
         original_data = data.copy()
 
         ostalo_ids = self._load_ostalo_groups()
@@ -216,7 +159,6 @@ class OstaloGroupFilter(DataFilter):
 
 
 class TextQualityFilter(DataFilter):
-    """Filter samples based on text quality criteria."""
 
     def __init__(
         self,
@@ -229,19 +171,6 @@ class TextQualityFilter(DataFilter):
         remove_empty: bool = True,
         verbose: bool = True
     ):
-        """
-        Initialize text quality filter.
-
-        Args:
-            text_column: Name of the text column
-            min_text_length: Minimum character length
-            max_text_length: Maximum character length (None for no limit)
-            min_word_count: Minimum word count
-            max_word_count: Maximum word count (None for no limit)
-            remove_duplicates: Whether to remove duplicate texts
-            remove_empty: Whether to remove empty texts
-            verbose: Whether to log filtering information
-        """
         super().__init__(verbose)
         self.text_column = text_column
         self.min_text_length = min_text_length
@@ -252,15 +181,6 @@ class TextQualityFilter(DataFilter):
         self.remove_empty = remove_empty
 
     def filter(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Filter data based on text quality criteria.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Filtered DataFrame
-        """
         original_data = data.copy()
         filtered_data = data.copy()
 
@@ -313,29 +233,12 @@ class TextQualityFilter(DataFilter):
 
 
 class CompositeFilter(DataFilter):
-    """Composite filter that applies multiple filters in sequence."""
 
     def __init__(self, filters: List[DataFilter], verbose: bool = True):
-        """
-        Initialize composite filter.
-
-        Args:
-            filters: List of filters to apply in order
-            verbose: Whether to log filtering information
-        """
         super().__init__(verbose)
         self.filters = filters
 
     def filter(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Apply all filters in sequence.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Filtered DataFrame
-        """
         original_data = data.copy()
         current_data = data.copy()
 
@@ -369,20 +272,6 @@ def create_default_filters(
     remove_ostalo: bool = True,
     **kwargs
 ) -> CompositeFilter:
-    """
-    Create default set of filters for ad classification.
-
-    Args:
-        class_column: Name of the class/group column
-        text_column: Name of the text column
-        min_samples_per_class: Minimum samples per class
-        ostalo_groups_file: Path to ostalo groups file
-        remove_ostalo: Whether to remove ostalo groups
-        **kwargs: Additional arguments for specific filters
-
-    Returns:
-        Composite filter with default configuration
-    """
     filters = []
 
     text_filter = TextQualityFilter(

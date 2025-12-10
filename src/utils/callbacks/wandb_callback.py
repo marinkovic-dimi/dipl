@@ -1,5 +1,3 @@
-"""Weights & Biases callback for Keras training."""
-
 import keras
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -10,7 +8,6 @@ logger = get_logger(__name__)
 
 
 class WandbCallback(keras.callbacks.Callback):
-    """Weights & Biases logging callback for Keras training."""
 
     def __init__(
         self,
@@ -25,21 +22,6 @@ class WandbCallback(keras.callbacks.Callback):
         log_frequency: int = 100,
         save_code: bool = True
     ):
-        """
-        Initialize Weights & Biases callback.
-
-        Args:
-            config: Configuration dictionary to log
-            project: W&B project name
-            entity: W&B entity (username or team)
-            name: Run name
-            tags: List of tags
-            notes: Run notes
-            log_model: Whether to log model checkpoints
-            log_gradients: Whether to log gradients
-            log_frequency: Frequency of logging (batches)
-            save_code: Whether to save code
-        """
         super().__init__()
         self.config = config or {}
         self.project = project
@@ -64,7 +46,6 @@ class WandbCallback(keras.callbacks.Callback):
             self.wandb = None
 
     def on_train_begin(self, logs=None):
-        """Initialize W&B run at the start of training."""
         if self.wandb is None:
             logger.warning("W&B callback disabled - wandb not installed")
             return
@@ -100,13 +81,11 @@ class WandbCallback(keras.callbacks.Callback):
             self.wandb = None
 
     def on_epoch_end(self, epoch, logs=None):
-        """Log metrics at the end of each epoch."""
         if self.wandb is None or not self.wandb.run:
             return
 
         logs = logs or {}
 
-        # Log epoch metrics with 'epoch/' prefix
         metrics = {'epoch': epoch + 1}
         for key, value in logs.items():
             if isinstance(value, (int, float)):
@@ -119,7 +98,6 @@ class WandbCallback(keras.callbacks.Callback):
             logger.error(f"Failed to log epoch metrics: {e}")
 
     def on_batch_end(self, batch, logs=None):
-        """Log batch-level metrics."""
         if self.wandb is None or not self.wandb.run:
             return
 
@@ -140,7 +118,6 @@ class WandbCallback(keras.callbacks.Callback):
                 logger.error(f"Failed to log batch metrics: {e}")
 
     def on_train_end(self, logs=None):
-        """Finish W&B run at the end of training."""
         if self.wandb is None or not self.wandb.run:
             return
 
@@ -166,16 +143,6 @@ def create_wandb_callback(
     config: Optional[Dict[str, Any]] = None,
     wandb_config: Optional[Any] = None
 ) -> Optional[WandbCallback]:
-    """
-    Factory function to create W&B callback from configuration.
-
-    Args:
-        config: Full configuration dictionary
-        wandb_config: WandbConfig object or dict
-
-    Returns:
-        WandbCallback if enabled, None otherwise
-    """
     if wandb_config is None:
         return None
 

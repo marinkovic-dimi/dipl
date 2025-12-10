@@ -6,28 +6,12 @@ from ..utils import LoggerMixin, SERBIAN_STOP_WORDS
 
 
 class TextPreprocessor(ABC, LoggerMixin):
-    """Abstract base class for text preprocessors."""
 
     def __init__(self, verbose: bool = True):
-        """
-        Initialize text preprocessor.
-
-        Args:
-            verbose: Whether to log processing information
-        """
         self.verbose = verbose
 
     @abstractmethod
     def preprocess_text(self, text: str) -> str:
-        """
-        Preprocess a single text string.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Preprocessed text
-        """
         pass
 
     def preprocess_dataframe(
@@ -37,18 +21,6 @@ class TextPreprocessor(ABC, LoggerMixin):
         output_column: str,
         inplace: bool = False
     ) -> pd.DataFrame:
-        """
-        Preprocess text column in DataFrame.
-
-        Args:
-            data: Input DataFrame
-            text_column: Name of column containing text
-            output_column: Name of output column for preprocessed text
-            inplace: Whether to modify DataFrame in place
-
-        Returns:
-            DataFrame with preprocessed text
-        """
         if not inplace:
             data = data.copy()
 
@@ -71,7 +43,6 @@ class TextPreprocessor(ABC, LoggerMixin):
 
 
 class SerbianTextPreprocessor(TextPreprocessor):
-    """Text preprocessor optimized for Serbian language text."""
 
     def __init__(
         self,
@@ -82,17 +53,6 @@ class SerbianTextPreprocessor(TextPreprocessor):
         custom_transformations: Optional[List[Callable[[str], str]]] = None,
         verbose: bool = True
     ):
-        """
-        Initialize Serbian text preprocessor.
-
-        Args:
-            transliterate_cyrillic: Whether to transliterate Cyrillic to Latin
-            lowercase: Whether to convert to lowercase
-            remove_stop_words: Whether to remove stop words
-            stop_words: Custom stop words set (defaults to Serbian stop words)
-            custom_transformations: Additional text transformation functions
-            verbose: Whether to log processing information
-        """
         super().__init__(verbose)
         self.transliterate_cyrillic = transliterate_cyrillic
         self.lowercase = lowercase
@@ -114,15 +74,6 @@ class SerbianTextPreprocessor(TextPreprocessor):
         }
 
     def detect_script(self, text: str) -> str:
-        """
-        Detect the script used in text.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Script type: 'Cyrillic', 'Latin', 'Mixed', or 'Unknown'
-        """
         cyrillic_range = range(0x0410, 0x0450)
         latin_range = [
             *range(0x0041, 0x005B),
@@ -144,78 +95,24 @@ class SerbianTextPreprocessor(TextPreprocessor):
             return "Unknown"
 
     def transliterate_cyrillic_to_latin(self, text: str) -> str:
-        """
-        Transliterate Cyrillic text to Latin.
-
-        Args:
-            text: Input text in Cyrillic
-
-        Returns:
-            Transliterated text in Latin
-        """
         return ''.join(self.cyrillic_to_latin.get(char, char) for char in text)
 
     def extract_words(self, text: str) -> List[str]:
-        """
-        Extract words from text using regex.
-
-        Args:
-            text: Input text
-
-        Returns:
-            List of words
-        """
         return re.findall(r'[\w+]+', text)
 
     def contains_number(self, word: str) -> bool:
-        """
-        Check if word contains numbers.
-
-        Args:
-            word: Input word
-
-        Returns:
-            True if word contains numbers
-        """
         return bool(re.search(r'\d', word))
 
     def concatenate_i_phone(self, text: str) -> str:
-        """
-        Fix common iPhone writing pattern.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Text with "i phone" -> "iphone"
-        """
         pattern = r'\bi phone\b'
         return re.sub(pattern, "iphone", text, flags=re.IGNORECASE)
 
     def split_numbers_on_digits(self, text: str) -> str:
-        """
-        Split numbers by adding spaces around digits.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Text with spaced digits
-        """
         text = re.sub(r'(\d+)', r' \1 ', text)
         text = re.sub(r'(\d)', r' \1 ', text)
         return re.sub(r'\s+', ' ', text).strip()
 
     def preprocess_text(self, text: str) -> str:
-        """
-        Preprocess a single text string using Serbian-specific rules.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Preprocessed text
-        """
         if pd.isna(text) or not isinstance(text, str):
             return ""
 
@@ -238,16 +135,6 @@ class SerbianTextPreprocessor(TextPreprocessor):
         return " ".join(words)
 
     def get_preprocessing_stats(self, data: pd.DataFrame, text_column: str) -> dict:
-        """
-        Get statistics about text preprocessing.
-
-        Args:
-            data: Input DataFrame
-            text_column: Name of text column
-
-        Returns:
-            Dictionary with preprocessing statistics
-        """
         stats = {
             'total_texts': len(data),
             'script_distribution': {},
@@ -272,7 +159,6 @@ class SerbianTextPreprocessor(TextPreprocessor):
 
 
 class BasicTextPreprocessor(TextPreprocessor):
-    """Basic text preprocessor for general use."""
 
     def __init__(
         self,
@@ -282,16 +168,6 @@ class BasicTextPreprocessor(TextPreprocessor):
         min_word_length: int = 2,
         verbose: bool = True
     ):
-        """
-        Initialize basic text preprocessor.
-
-        Args:
-            lowercase: Whether to convert to lowercase
-            remove_punctuation: Whether to remove punctuation
-            remove_extra_whitespace: Whether to normalize whitespace
-            min_word_length: Minimum word length to keep
-            verbose: Whether to log processing information
-        """
         super().__init__(verbose)
         self.lowercase = lowercase
         self.remove_punctuation = remove_punctuation
@@ -299,15 +175,6 @@ class BasicTextPreprocessor(TextPreprocessor):
         self.min_word_length = min_word_length
 
     def preprocess_text(self, text: str) -> str:
-        """
-        Preprocess a single text string using basic rules.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Preprocessed text
-        """
         if pd.isna(text) or not isinstance(text, str):
             return ""
 
@@ -332,19 +199,6 @@ def create_preprocessor(
     preprocessor_type: str = "serbian",
     **kwargs
 ) -> TextPreprocessor:
-    """
-    Factory function to create text preprocessor.
-
-    Args:
-        preprocessor_type: Type of preprocessor ('serbian', 'basic')
-        **kwargs: Additional arguments for the preprocessor
-
-    Returns:
-        Configured text preprocessor
-
-    Raises:
-        ValueError: If preprocessor_type is not supported
-    """
     if preprocessor_type == "serbian":
         return SerbianTextPreprocessor(**kwargs)
     elif preprocessor_type == "basic":

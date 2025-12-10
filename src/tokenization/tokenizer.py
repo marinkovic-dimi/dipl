@@ -14,7 +14,6 @@ from ..utils.serialization import SerializationManager, ensure_dir
 
 
 class EnhancedTokenizer(LoggerMixin):
-    """Enhanced tokenizer with caching and improved functionality."""
 
     def __init__(
         self,
@@ -25,17 +24,6 @@ class EnhancedTokenizer(LoggerMixin):
         cache_dir: str = "cache/tokenizers",
         verbose: bool = True
     ):
-        """
-        Initialize enhanced tokenizer.
-
-        Args:
-            vocab_size: Size of vocabulary
-            min_frequency: Minimum frequency for tokens
-            special_tokens: List of special tokens
-            max_length: Maximum sequence length
-            cache_dir: Directory for caching trained tokenizers
-            verbose: Whether to log information
-        """
         self.vocab_size = vocab_size
         self.min_frequency = min_frequency
         self.special_tokens = special_tokens or ["[PAD]", "[CLS]", "[UNK]", "[SEP]", "[MASK]"]
@@ -49,15 +37,6 @@ class EnhancedTokenizer(LoggerMixin):
         self._is_trained = False
 
     def _get_cache_key(self, texts: pd.Series) -> str:
-        """
-        Generate cache key based on tokenizer configuration and input texts.
-
-        Args:
-            texts: Input texts for training
-
-        Returns:
-            Cache key string
-        """
         config_str = f"{self.vocab_size}_{self.min_frequency}_{len(self.special_tokens)}_{self.max_length}"
 
         text_sample = texts.head(1000).str.cat(sep=" ")
@@ -66,19 +45,9 @@ class EnhancedTokenizer(LoggerMixin):
         return f"tokenizer_{config_str}_{text_hash}"
 
     def _get_cache_path(self, cache_key: str) -> Path:
-        """Get full cache path for tokenizer."""
         return self.cache_dir / f"{cache_key}.json"
 
     def _preprocess_text_for_tokenization(self, text: str) -> str:
-        """
-        Preprocess text before tokenization.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Preprocessed text
-        """
         text = re.sub(r'(\d+)', r' \1 ', text)
         text = re.sub(r'(\d)', r' \1 ', text)
         return re.sub(r'\s+', ' ', text).strip()
@@ -89,14 +58,6 @@ class EnhancedTokenizer(LoggerMixin):
         use_cache: bool = True,
         save_cache: bool = True
     ) -> None:
-        """
-        Train tokenizer on provided texts.
-
-        Args:
-            texts: Series of texts for training
-            use_cache: Whether to use cached tokenizer if available
-            save_cache: Whether to save trained tokenizer to cache
-        """
         cache_key = self._get_cache_key(texts)
         cache_path = self._get_cache_path(cache_key)
 
@@ -139,16 +100,6 @@ class EnhancedTokenizer(LoggerMixin):
             self.logger.info("Tokenizer training completed")
 
     def encode_text(self, text: str, add_special_tokens: bool = True) -> List[str]:
-        """
-        Encode text to tokens.
-
-        Args:
-            text: Input text
-            add_special_tokens: Whether to add [CLS] and [SEP] tokens
-
-        Returns:
-            List of tokens
-        """
         if not self._is_trained:
             raise RuntimeError("Tokenizer must be trained before encoding")
 
@@ -161,16 +112,6 @@ class EnhancedTokenizer(LoggerMixin):
         return tokens
 
     def encode_to_ids(self, text: str, add_special_tokens: bool = True) -> List[int]:
-        """
-        Encode text to token IDs.
-
-        Args:
-            text: Input text
-            add_special_tokens: Whether to add special tokens
-
-        Returns:
-            List of token IDs
-        """
         tokens = self.encode_text(text, add_special_tokens)
         return [self.tokenizer.token_to_id(token) for token in tokens]
 
@@ -180,17 +121,6 @@ class EnhancedTokenizer(LoggerMixin):
         add_special_tokens: bool = True,
         pad_to_max_length: bool = True
     ) -> Union[List[List[int]], tf.Tensor]:
-        """
-        Encode batch of texts to token IDs.
-
-        Args:
-            texts: List or Series of texts
-            add_special_tokens: Whether to add special tokens
-            pad_to_max_length: Whether to pad sequences to max_length
-
-        Returns:
-            List of token ID sequences or padded tensor
-        """
         if isinstance(texts, pd.Series):
             texts = texts.tolist()
 
@@ -209,16 +139,6 @@ class EnhancedTokenizer(LoggerMixin):
         return encoded
 
     def decode(self, token_ids: List[int], skip_special_tokens: bool = True) -> str:
-        """
-        Decode token IDs back to text.
-
-        Args:
-            token_ids: List of token IDs
-            skip_special_tokens: Whether to skip special tokens
-
-        Returns:
-            Decoded text
-        """
         if not self._is_trained:
             raise RuntimeError("Tokenizer must be trained before decoding")
 
@@ -231,28 +151,16 @@ class EnhancedTokenizer(LoggerMixin):
         return " ".join(tokens)
 
     def get_vocab_size(self) -> int:
-        """Get vocabulary size."""
         if not self._is_trained:
             return 0
         return self.tokenizer.get_vocab_size()
 
     def get_vocab(self) -> Dict[str, int]:
-        """Get vocabulary mapping."""
         if not self._is_trained:
             return {}
         return self.tokenizer.get_vocab()
 
     def analyze_tokenization(self, texts: pd.Series, sample_size: int = 100) -> Dict:
-        """
-        Analyze tokenization results.
-
-        Args:
-            texts: Sample texts to analyze
-            sample_size: Number of texts to analyze
-
-        Returns:
-            Analysis results
-        """
         if not self._is_trained:
             raise RuntimeError("Tokenizer must be trained before analysis")
 
@@ -295,12 +203,6 @@ class EnhancedTokenizer(LoggerMixin):
         return analysis
 
     def save(self, file_path: Union[str, Path]) -> None:
-        """
-        Save tokenizer to file.
-
-        Args:
-            file_path: Path to save tokenizer
-        """
         if not self._is_trained:
             raise RuntimeError("Cannot save untrained tokenizer")
 
@@ -312,12 +214,6 @@ class EnhancedTokenizer(LoggerMixin):
             self.logger.info(f"Saved tokenizer to {file_path}")
 
     def load(self, file_path: Union[str, Path]) -> None:
-        """
-        Load tokenizer from file.
-
-        Args:
-            file_path: Path to tokenizer file
-        """
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"Tokenizer file not found: {file_path}")
@@ -330,10 +226,8 @@ class EnhancedTokenizer(LoggerMixin):
 
 
 class WordPieceTokenizer(EnhancedTokenizer):
-    """Specialized WordPiece tokenizer for Serbian text."""
 
     def __init__(self, **kwargs):
-        """Initialize WordPiece tokenizer with Serbian-optimized settings."""
         default_kwargs = {
             'vocab_size': 15000,
             'min_frequency': 2,
@@ -344,18 +238,7 @@ class WordPieceTokenizer(EnhancedTokenizer):
         super().__init__(**default_kwargs)
 
     def _preprocess_text_for_tokenization(self, text: str) -> str:
-        """
-        Serbian-specific preprocessing before tokenization.
-
-        Args:
-            text: Input text
-
-        Returns:
-            Preprocessed text
-        """
         text = super()._preprocess_text_for_tokenization(text)
-
-
         return text
 
 
@@ -363,19 +246,6 @@ def create_tokenizer(
     tokenizer_type: str = "wordpiece",
     **kwargs
 ) -> EnhancedTokenizer:
-    """
-    Factory function to create tokenizer.
-
-    Args:
-        tokenizer_type: Type of tokenizer ('wordpiece', 'enhanced')
-        **kwargs: Additional arguments for the tokenizer
-
-    Returns:
-        Configured tokenizer
-
-    Raises:
-        ValueError: If tokenizer_type is not supported
-    """
     if tokenizer_type == "wordpiece":
         return WordPieceTokenizer(**kwargs)
     elif tokenizer_type == "enhanced":

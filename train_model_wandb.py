@@ -1,5 +1,3 @@
-"""Training script with Weights & Biases integration using YAML config."""
-
 import argparse
 import pandas as pd
 import numpy as np

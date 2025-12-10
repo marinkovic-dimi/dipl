@@ -1,5 +1,3 @@
-"""Callbacks module for the AI classifier project."""
-
 from .training_plot_callback import TrainingPlotCallback
 from .batch_progress_callback import BatchProgressCallback
 from .wandb_callback import WandbCallback, create_wandb_callback

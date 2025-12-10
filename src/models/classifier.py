@@ -9,7 +9,6 @@ from ..utils.callbacks import create_wandb_callback
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='top_k_acc')
 def top_k_acc(y_true, y_pred, k=3):
-    """Top-k accuracy metric."""
     top_k_preds = tf.math.top_k(y_pred, k=k).indices
     y_true = tf.cast(y_true, tf.int32)
     top_k_preds = tf.cast(top_k_preds, tf.int32)
@@ -18,7 +17,6 @@ def top_k_acc(y_true, y_pred, k=3):
 
 
 class AdClassifier(LoggerMixin):
-    """Enhanced ad classifier with transformer architecture."""
 
     def __init__(
         self,
@@ -35,23 +33,6 @@ class AdClassifier(LoggerMixin):
         use_class_weights: bool = False,
         label_smoothing: float = 0.0
     ):
-        """
-        Initialize ad classifier.
-
-        Args:
-            vocab_size: Vocabulary size
-            num_classes: Number of output classes
-            max_length: Maximum sequence length
-            embed_dim: Embedding dimension
-            num_heads: Number of attention heads
-            num_layers: Number of transformer layers
-            ff_dim: Feed-forward dimension
-            dropout_rate: Dropout rate
-            pooling_strategy: Pooling strategy ('cls', 'mean', 'max', 'attention')
-            activation: Activation function
-            use_class_weights: Whether to use class weights
-            label_smoothing: Label smoothing factor
-        """
         self.vocab_size = vocab_size
         self.num_classes = num_classes
         self.max_length = max_length
@@ -70,12 +51,6 @@ class AdClassifier(LoggerMixin):
         self._is_compiled = False
 
     def build_model(self) -> keras.Model:
-        """
-        Build the transformer-based classifier model.
-
-        Returns:
-            Compiled Keras model
-        """
         inputs = keras.layers.Input(shape=(self.max_length,), name='input_ids')
 
         embeddings = TokenAndPositionEmbedding(
@@ -136,16 +111,6 @@ class AdClassifier(LoggerMixin):
         loss: str = 'sparse_categorical_crossentropy',
         metrics: Optional[List[str]] = None
     ) -> None:
-        """
-        Compile the model with optimizer and loss function.
-
-        Args:
-            learning_rate: Learning rate
-            weight_decay: Weight decay for regularization
-            optimizer: Optimizer type
-            loss: Loss function
-            metrics: Additional metrics to track
-        """
         if self.model is None:
             raise RuntimeError("Model must be built before compilation")
 
@@ -179,22 +144,10 @@ class AdClassifier(LoggerMixin):
         self.logger.info(f"Model compiled with {optimizer} optimizer and {loss} loss")
 
     def set_class_weights(self, class_weights: Dict[int, float]) -> None:
-        """
-        Set class weights for handling imbalanced data.
-
-        Args:
-            class_weights: Dictionary mapping class indices to weights
-        """
         self.class_weights = class_weights
         self.logger.info(f"Set class weights for {len(class_weights)} classes")
 
     def get_model_summary(self) -> str:
-        """
-        Get model summary as string.
-
-        Returns:
-            Model summary string
-        """
         if self.model is None:
             return "Model not built yet"
 
@@ -204,13 +157,6 @@ class AdClassifier(LoggerMixin):
         return summary_io.getvalue()
 
     def save_model(self, save_path: str, save_format: str = 'keras') -> None:
-        """
-        Save the model to disk.
-
-        Args:
-            save_path: Path to save the model
-            save_format: Save format ('keras' for .keras file, 'tf' for SavedModel)
-        """
         if self.model is None:
             raise RuntimeError("Model must be built before saving")
 
@@ -227,12 +173,6 @@ class AdClassifier(LoggerMixin):
         self.logger.info(f"Model saved to {save_path}")
 
     def load_model(self, model_path: str) -> None:
-        """
-        Load model from disk.
-
-        Args:
-            model_path: Path to saved model
-        """
         model_path = Path(model_path)
         if not model_path.exists():
             raise FileNotFoundError(f"Model not found: {model_path}")
@@ -242,53 +182,21 @@ class AdClassifier(LoggerMixin):
         self.logger.info(f"Model loaded from {model_path}")
 
     def predict(self, inputs, batch_size: int = 32) -> tf.Tensor:
-        """
-        Make predictions on inputs.
-
-        Args:
-            inputs: Input data
-            batch_size: Batch size for prediction
-
-        Returns:
-            Prediction probabilities
-        """
         if self.model is None:
             raise RuntimeError("Model must be built before prediction")
 
         return self.model.predict(inputs, batch_size=batch_size)
 
     def predict_classes(self, inputs, batch_size: int = 32) -> tf.Tensor:
-        """
-        Predict class labels.
-
-        Args:
-            inputs: Input data
-            batch_size: Batch size for prediction
-
-        Returns:
-            Predicted class indices
-        """
         predictions = self.predict(inputs, batch_size)
         return tf.argmax(predictions, axis=-1)
 
     def predict_top_k(self, inputs, k: int = 3, batch_size: int = 32) -> tuple:
-        """
-        Predict top-k classes with probabilities.
-
-        Args:
-            inputs: Input data
-            k: Number of top predictions
-            batch_size: Batch size for prediction
-
-        Returns:
-            Tuple of (top_k_indices, top_k_probabilities)
-        """
         predictions = self.predict(inputs, batch_size)
         top_k_probs, top_k_indices = tf.nn.top_k(predictions, k=k)
         return top_k_indices, top_k_probs
 
     def get_config(self) -> Dict[str, Any]:
-        """Get model configuration."""
         return {
             'vocab_size': self.vocab_size,
             'num_classes': self.num_classes,
@@ -317,24 +225,6 @@ class AdClassifier(LoggerMixin):
         verbose: int = 1,
         **fit_kwargs
     ):
-        """
-        Train the model with optional W&B logging.
-
-        Args:
-            x_train: Training data
-            y_train: Training labels
-            x_val: Validation data
-            y_val: Validation labels
-            epochs: Number of epochs
-            batch_size: Batch size
-            callbacks: List of callbacks
-            wandb_config: WandbConfig object for W&B logging
-            verbose: Verbosity level
-            **fit_kwargs: Additional arguments for model.fit()
-
-        Returns:
-            Training history
-        """
         if self.model is None:
             raise RuntimeError("Model must be built before training")
 
@@ -377,17 +267,6 @@ def create_classifier_model(
     num_classes: int,
     config: Optional[Dict[str, Any]] = None
 ) -> AdClassifier:
-    """
-    Factory function to create classifier model.
-
-    Args:
-        vocab_size: Vocabulary size
-        num_classes: Number of output classes
-        config: Optional configuration dictionary
-
-    Returns:
-        Configured AdClassifier instance
-    """
     if config is None:
         config = {}
 
@@ -416,16 +295,6 @@ def create_classifier_model(
 
 
 def calculate_class_weights(class_counts: Dict[int, int], strategy: str = 'balanced') -> Dict[int, float]:
-    """
-    Calculate class weights for handling imbalanced data.
-
-    Args:
-        class_counts: Dictionary mapping class indices to their counts
-        strategy: Weighting strategy ('balanced', 'inverse', 'log')
-
-    Returns:
-        Dictionary mapping class indices to weights
-    """
     if strategy == 'balanced':
         total_samples = sum(class_counts.values())
         num_classes = len(class_counts)

@@ -1,5 +1,3 @@
-"""Configuration manager for loading and saving configs."""
-
 import yaml
 from pathlib import Path
 from typing import Dict, Any
@@ -14,7 +12,6 @@ from .wandb_config import WandbConfig
 
 
 class ConfigManager:
-    """Configuration manager for loading and saving configs."""
 
     def __init__(self, config_dir: str = "configs"):
         self.config_dir = Path(config_dir)
@@ -22,7 +19,6 @@ class ConfigManager:
 
     @classmethod
     def from_yaml(cls, config_path: str) -> Config:
-        """Load configuration from YAML file."""
         with open(config_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
 
@@ -30,7 +26,6 @@ class ConfigManager:
 
     @classmethod
     def _dict_to_config(cls, config_dict: Dict[str, Any]) -> Config:
-        """Convert dictionary to Config object."""
         data_config = DataConfig(**config_dict.get('data', {}))
         tokenization_config = TokenizationConfig(**config_dict.get('tokenization', {}))
         model_config = ModelConfig(**config_dict.get('model', {}))
@@ -52,7 +47,6 @@ class ConfigManager:
         )
 
     def save_config(self, config: Config, filename: str) -> Path:
-        """Save configuration to YAML file."""
         config_path = self.config_dir / filename
         config_dict = self._config_to_dict(config)
 
@@ -63,7 +57,6 @@ class ConfigManager:
 
     @staticmethod
     def _config_to_dict(config: Config) -> Dict[str, Any]:
-        """Convert Config object to dictionary."""
         return {
             'project_name': config.project_name,
             'version': config.version,
@@ -78,5 +71,4 @@ class ConfigManager:
         }
 
     def create_default_config(self) -> Config:
-        """Create default configuration."""
         return Config()

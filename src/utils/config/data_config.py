@@ -1,11 +1,8 @@
-"""Data processing configuration."""
-
 from dataclasses import dataclass
 
 
 @dataclass
 class DataConfig:
-    """Configuration for data processing."""
     raw_data_path: str = "data/ads-ai-20250109.json"
     processed_data_dir: str = "data/processed"
 

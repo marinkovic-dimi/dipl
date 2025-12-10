@@ -6,7 +6,6 @@ from ..utils.logging import LoggerMixin
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='TokenAndPositionEmbedding')
 class TokenAndPositionEmbedding(keras.layers.Layer, LoggerMixin):
-    """Enhanced token and position embedding layer."""
 
     def __init__(
         self,
@@ -17,17 +16,6 @@ class TokenAndPositionEmbedding(keras.layers.Layer, LoggerMixin):
         dropout_rate: float = 0.1,
         **kwargs
     ):
-        """
-        Initialize token and position embedding layer.
-
-        Args:
-            maxlen: Maximum sequence length
-            vocab_size: Vocabulary size
-            embed_dim: Embedding dimension
-            mask_zero: Whether to mask zero values (padding)
-            dropout_rate: Dropout rate for embeddings
-            **kwargs: Additional layer arguments
-        """
         super(TokenAndPositionEmbedding, self).__init__(**kwargs)
         self.maxlen = maxlen
         self.vocab_size = vocab_size
@@ -49,7 +37,6 @@ class TokenAndPositionEmbedding(keras.layers.Layer, LoggerMixin):
         self.dropout = keras.layers.Dropout(dropout_rate)
 
     def call(self, x, training=None):
-        """Forward pass."""
         maxlen = tf.shape(x)[-1]
         positions = tf.range(start=0, limit=maxlen, delta=1)
 
@@ -61,7 +48,6 @@ class TokenAndPositionEmbedding(keras.layers.Layer, LoggerMixin):
         return self.dropout(embeddings, training=training)
 
     def get_config(self):
-        """Get layer configuration."""
         config = super(TokenAndPositionEmbedding, self).get_config()
         config.update({
             'maxlen': self.maxlen,
@@ -74,13 +60,11 @@ class TokenAndPositionEmbedding(keras.layers.Layer, LoggerMixin):
 
     @classmethod
     def from_config(cls, config):
-        """Create layer from configuration."""
         return cls(**config)
 
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='TransformerEncoder')
 class TransformerEncoder(keras.layers.Layer, LoggerMixin):
-    """Enhanced transformer encoder layer with improved functionality."""
 
     def __init__(
         self,
@@ -93,19 +77,6 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         use_causal_mask: bool = False,
         **kwargs
     ):
-        """
-        Initialize transformer encoder layer.
-
-        Args:
-            embed_dim: Embedding dimension
-            num_heads: Number of attention heads
-            ff_dim: Feed-forward dimension
-            dropout_rate: Dropout rate
-            activation: Activation function for feed-forward network
-            layer_norm_epsilon: Epsilon for layer normalization
-            use_causal_mask: Whether to use causal (autoregressive) masking
-            **kwargs: Additional layer arguments
-        """
         super(TransformerEncoder, self).__init__(**kwargs)
         self.embed_dim = embed_dim
         self.num_heads = num_heads
@@ -139,7 +110,6 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         self.dropout2 = keras.layers.Dropout(dropout_rate)
 
     def call(self, inputs, attention_mask=None, training=None):
-        """Forward pass."""
         if self.use_causal_mask:
             seq_len = tf.shape(inputs)[1]
             causal_mask = self._create_causal_mask(seq_len)
@@ -165,12 +135,10 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         return self.layernorm2(out1 + ffn_output)
 
     def _create_causal_mask(self, seq_len):
-        """Create causal mask for autoregressive attention."""
         mask = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
         return mask[tf.newaxis, tf.newaxis, :, :]
 
     def get_config(self):
-        """Get layer configuration."""
         config = super(TransformerEncoder, self).get_config()
         config.update({
             'embed_dim': self.embed_dim,
@@ -185,12 +153,10 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
 
     @classmethod
     def from_config(cls, config):
-        """Create layer from configuration."""
         return cls(**config)
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='MultiLayerTransformer')
 class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
-    """Multi-layer transformer encoder stack."""
 
     def __init__(
         self,
@@ -202,18 +168,6 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         activation: str = 'relu',
         **kwargs
     ):
-        """
-        Initialize multi-layer transformer.
-
-        Args:
-            num_layers: Number of transformer layers
-            embed_dim: Embedding dimension
-            num_heads: Number of attention heads
-            ff_dim: Feed-forward dimension
-            dropout_rate: Dropout rate
-            activation: Activation function
-            **kwargs: Additional arguments
-        """
         super(MultiLayerTransformer, self).__init__(**kwargs)
         self.num_layers = num_layers
         self.embed_dim = embed_dim
@@ -235,7 +189,6 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         ]
 
     def call(self, inputs, attention_mask=None, training=None):
-        """Forward pass through all transformer layers."""
         x = inputs
 
         for layer in self.transformer_layers:
@@ -244,7 +197,6 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         return x
 
     def get_config(self):
-        """Get layer configuration."""
         config = super(MultiLayerTransformer, self).get_config()
         config.update({
             'num_layers': self.num_layers,
@@ -258,12 +210,10 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
     
     @classmethod
     def from_config(cls, config):
-        """Create layer from configuration."""
         return cls(**config)
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='PoolingLayer')
 class PoolingLayer(keras.layers.Layer):
-    """Enhanced pooling layer for sequence classification."""
 
     def __init__(
         self,
@@ -271,14 +221,6 @@ class PoolingLayer(keras.layers.Layer):
         embed_dim: Optional[int] = None,
         **kwargs
     ):
-        """
-        Initialize pooling layer.
-
-        Args:
-            pooling_strategy: Strategy for pooling ('cls', 'mean', 'max', 'attention')
-            embed_dim: Embedding dimension (required for attention pooling)
-            **kwargs: Additional layer arguments
-        """
         super(PoolingLayer, self).__init__(**kwargs)
         self.pooling_strategy = pooling_strategy
         self.embed_dim = embed_dim
@@ -291,7 +233,6 @@ class PoolingLayer(keras.layers.Layer):
             self.attention_softmax = keras.layers.Softmax(axis=1)
 
     def call(self, inputs, mask=None):
-        """Forward pass."""
         if self.pooling_strategy == 'cls':
             return inputs[:, 0, :]
 
@@ -325,7 +266,6 @@ class PoolingLayer(keras.layers.Layer):
             raise ValueError(f"Unsupported pooling strategy: {self.pooling_strategy}")
 
     def get_config(self):
-        """Get layer configuration."""
         config = super(PoolingLayer, self).get_config()
         config.update({
             'pooling_strategy': self.pooling_strategy,
@@ -335,5 +275,4 @@ class PoolingLayer(keras.layers.Layer):
     
     @classmethod
     def from_config(cls, config):
-        """Create layer from configuration."""
         return cls(**config)

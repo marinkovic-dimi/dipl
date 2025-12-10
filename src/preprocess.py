@@ -7,7 +7,7 @@ def main():
     data = load_data('/home/dimitrijem/Documents/dipl/project/src/ad_group.json')
     all_characters = data['name'].apply(extract_characters)
     all_characters = [char for sublist in all_characters for char in sublist]
-    unique_characters = set(all_characters)
+
     data['words'] = data['name'].apply(lambda x: extract_words(x))
     data['word_count'] = data['words'].apply(lambda x: len(x))
     data['word_count'].value_counts().plot(kind='bar')

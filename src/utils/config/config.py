@@ -14,7 +14,6 @@ from .wandb_config import WandbConfig
 
 @dataclass
 class Config:
-    """Main configuration class."""
     project_name: str = "klasifikator"
     version: str = "1.0.0"
     experiment_name: Optional[str] = None
@@ -28,6 +27,5 @@ class Config:
     wandb: WandbConfig = field(default_factory=WandbConfig)
 
     def __post_init__(self):
-        """Set experiment name if not provided."""
         if self.experiment_name is None:
             self.experiment_name = f"{self.project_name}_{self.timestamp}"

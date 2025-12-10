@@ -1,12 +1,9 @@
-"""Weights & Biases configuration."""
-
 from dataclasses import dataclass, field
 from typing import Optional
 
 
 @dataclass
 class WandbConfig:
-    """Configuration for Weights & Biases logging."""
     enabled: bool = True
     project: str = "klasifikator"
     entity: Optional[str] = None

@@ -6,30 +6,13 @@ from ..utils import LoggerMixin
 
 
 class DataSplitter(ABC, LoggerMixin):
-    """Abstract base class for data splitters."""
 
     def __init__(self, random_state: int = 42, verbose: bool = True):
-        """
-        Initialize data splitter.
-
-        Args:
-            random_state: Random state for reproducibility
-            verbose: Whether to log splitting information
-        """
         self.random_state = random_state
         self.verbose = verbose
 
     @abstractmethod
     def split(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Split data into train, validation, and test sets.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Tuple of (train, validation, test) DataFrames
-        """
         pass
 
     def _log_split_results(
@@ -39,7 +22,6 @@ class DataSplitter(ABC, LoggerMixin):
         test: pd.DataFrame,
         class_column: Optional[str] = None
     ) -> None:
-        """Log splitting results."""
         if self.verbose:
             total_size = len(train) + len(val) + len(test)
             train_pct = len(train) / total_size * 100
@@ -63,7 +45,6 @@ class DataSplitter(ABC, LoggerMixin):
 
 
 class StratifiedDataSplitter(DataSplitter):
-    """Stratified splitter that maintains class distribution across splits."""
 
     def __init__(
         self,
@@ -73,16 +54,6 @@ class StratifiedDataSplitter(DataSplitter):
         random_state: int = 42,
         verbose: bool = True
     ):
-        """
-        Initialize stratified data splitter.
-
-        Args:
-            class_column: Name of the class column for stratification
-            val_size: Proportion of data for validation (0.0 to 1.0)
-            test_size: Proportion of data for test (0.0 to 1.0)
-            random_state: Random state for reproducibility
-            verbose: Whether to log splitting information
-        """
         super().__init__(random_state, verbose)
         self.class_column = class_column
         self.val_size = val_size
@@ -96,15 +67,6 @@ class StratifiedDataSplitter(DataSplitter):
             raise ValueError("val_size + test_size must be less than 1.0")
 
     def split(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Split data using stratified sampling.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Tuple of (train, validation, test) DataFrames
-        """
         if self.class_column not in data.columns:
             raise ValueError(f"Class column '{self.class_column}' not found in data")
 
@@ -136,17 +98,6 @@ class StratifiedDataSplitter(DataSplitter):
         val: pd.DataFrame,
         test: pd.DataFrame
     ) -> Dict[str, Any]:
-        """
-        Validate that stratification worked correctly.
-
-        Args:
-            train: Training DataFrame
-            val: Validation DataFrame
-            test: Test DataFrame
-
-        Returns:
-            Validation results dictionary
-        """
         train_dist = train[self.class_column].value_counts(normalize=True).sort_index()
         val_dist = val[self.class_column].value_counts(normalize=True).sort_index()
         test_dist = test[self.class_column].value_counts(normalize=True).sort_index()
@@ -192,7 +143,6 @@ class StratifiedDataSplitter(DataSplitter):
 
 
 class RandomDataSplitter(DataSplitter):
-    """Random splitter without stratification."""
 
     def __init__(
         self,
@@ -201,15 +151,6 @@ class RandomDataSplitter(DataSplitter):
         random_state: int = 42,
         verbose: bool = True
     ):
-        """
-        Initialize random data splitter.
-
-        Args:
-            val_size: Proportion of data for validation (0.0 to 1.0)
-            test_size: Proportion of data for test (0.0 to 1.0)
-            random_state: Random state for reproducibility
-            verbose: Whether to log splitting information
-        """
         super().__init__(random_state, verbose)
         self.val_size = val_size
         self.test_size = test_size
@@ -222,15 +163,6 @@ class RandomDataSplitter(DataSplitter):
             raise ValueError("val_size + test_size must be less than 1.0")
 
     def split(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Split data using random sampling.
-
-        Args:
-            data: Input DataFrame
-
-        Returns:
-            Tuple of (train, validation, test) DataFrames
-        """
         if self.verbose:
             self.logger.info(f"Random splitting with val_size={self.val_size}, test_size={self.test_size}")
 
@@ -253,7 +185,6 @@ class RandomDataSplitter(DataSplitter):
 
 
 class TimeBasedDataSplitter(DataSplitter):
-    """Time-based splitter for temporal data."""
 
     def __init__(
         self,
@@ -262,30 +193,12 @@ class TimeBasedDataSplitter(DataSplitter):
         test_size: float = 0.1,
         verbose: bool = True
     ):
-        """
-        Initialize time-based data splitter.
-
-        Args:
-            time_column: Name of the time column
-            val_size: Proportion of data for validation (0.0 to 1.0)
-            test_size: Proportion of data for test (0.0 to 1.0)
-            verbose: Whether to log splitting information
-        """
         super().__init__(random_state=None, verbose=verbose)
         self.time_column = time_column
         self.val_size = val_size
         self.test_size = test_size
 
     def split(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        """
-        Split data based on time ordering.
-
-        Args:
-            data: Input DataFrame with time column
-
-        Returns:
-            Tuple of (train, validation, test) DataFrames
-        """
         if self.time_column not in data.columns:
             raise ValueError(f"Time column '{self.time_column}' not found in data")
 
@@ -311,20 +224,6 @@ def create_data_splitter(
     class_column: Optional[str] = None,
     **kwargs
 ) -> DataSplitter:
-    """
-    Factory function to create data splitter.
-
-    Args:
-        splitter_type: Type of splitter ('stratified', 'random', 'time')
-        class_column: Name of class column (required for stratified)
-        **kwargs: Additional arguments for the splitter
-
-    Returns:
-        Configured data splitter
-
-    Raises:
-        ValueError: If splitter_type is not supported or required args missing
-    """
     if splitter_type == "stratified":
         if class_column is None:
             raise ValueError("class_column is required for stratified splitting")

@@ -1,5 +1,3 @@
-"""Plotting utilities for model evaluation and visualization."""
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,18 +17,6 @@ def plot_confusion_matrix(
     figsize: Tuple[int, int] = (12, 10),
     normalize: bool = True
 ):
-    """
-    Plot confusion matrix.
-
-    Args:
-        y_true: True labels
-        y_pred: Predicted labels
-        class_names: List of class names
-        output_path: Path to save the plot
-        title: Plot title
-        figsize: Figure size
-        normalize: Whether to normalize the matrix
-    """
     from sklearn.metrics import confusion_matrix
     import seaborn as sns
 
@@ -44,7 +30,6 @@ def plot_confusion_matrix(
 
     plt.figure(figsize=figsize)
 
-    # If too many classes, don't show annotations
     annot = len(cm) <= 30
 
     sns.heatmap(
@@ -75,30 +60,16 @@ def plot_classification_report(
     output_path: Optional[str] = None,
     top_n: int = 20
 ):
-    """
-    Plot classification report metrics.
-
-    Args:
-        y_true: True labels
-        y_pred: Predicted labels
-        class_names: List of class names
-        output_path: Path to save the plot
-        top_n: Number of classes to show (sorted by F1 score)
-    """
     from sklearn.metrics import classification_report
 
     report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
 
-    # Convert to DataFrame
     df = pd.DataFrame(report).T
 
-    # Filter out summary rows
     class_metrics = df[~df.index.isin(['accuracy', 'macro avg', 'weighted avg'])]
 
-    # Sort by F1 score and take top N
     class_metrics = class_metrics.sort_values('f1-score', ascending=True).tail(top_n)
 
-    # Plot
     fig, axes = plt.subplots(1, 3, figsize=(15, max(6, top_n * 0.3)))
 
     metrics = ['precision', 'recall', 'f1-score']
@@ -128,15 +99,6 @@ def plot_cumulative_accuracy(
     output_path: Optional[str] = None,
     max_k: int = 5
 ):
-    """
-    Plot cumulative top-k accuracy.
-
-    Args:
-        y_true: True labels
-        y_pred_proba: Predicted probabilities (num_samples, num_classes)
-        output_path: Path to save the plot
-        max_k: Maximum k for top-k accuracy
-    """
     top_k_preds = np.argsort(y_pred_proba, axis=1)[:, ::-1][:, :max_k]
 
     cumulative_acc = {}
@@ -152,7 +114,6 @@ def plot_cumulative_accuracy(
     plt.grid(True, alpha=0.3)
     plt.ylim(0, 105)
 
-    # Add value labels
     for i, (k, v) in enumerate(cumulative_acc.items()):
         plt.annotate(f'{v:.1f}%', (i, v), textcoords="offset points", xytext=(0, 10), ha='center')
 

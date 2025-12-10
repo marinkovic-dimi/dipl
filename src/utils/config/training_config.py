@@ -1,11 +1,8 @@
-"""Training configuration."""
-
 from dataclasses import dataclass
 
 
 @dataclass
 class TrainingConfig:
-    """Configuration for model training."""
     save_dir: str = "experiments"
     model_name: str = "klasifikator"
     save_best_only: bool = True
