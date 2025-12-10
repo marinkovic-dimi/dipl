@@ -1,30 +1,12 @@
+"""Logging setup and utility functions."""
+
 import logging
 import sys
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
-
-class ColoredFormatter(logging.Formatter):
-    """Custom formatter with colors for different log levels."""
-
-    COLORS = {
-        'DEBUG': '\033[36m',
-        'INFO': '\033[32m',
-        'WARNING': '\033[33m',
-        'ERROR': '\033[31m',
-        'CRITICAL': '\033[35m',
-        'RESET': '\033[0m'
-    }
-
-    def format(self, record):
-        """Format log record with colors."""
-        log_color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
-        reset_color = self.COLORS['RESET']
-
-        record.levelname = f"{log_color}{record.levelname}{reset_color}"
-
-        return super().format(record)
+from .colored_formatter import ColoredFormatter
 
 
 def setup_logging(
@@ -100,12 +82,3 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
         name = frame.f_globals.get('__name__', 'unknown')
 
     return logging.getLogger(f"ad_classifier.{name}")
-
-
-class LoggerMixin:
-    """Mixin class to add logging capability to any class."""
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Get logger for this class."""
-        return get_logger(self.__class__.__name__)

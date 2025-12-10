@@ -3,7 +3,8 @@ import keras
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 from .transformer import TokenAndPositionEmbedding, MultiLayerTransformer, PoolingLayer
-from ..utils import LoggerMixin, create_wandb_callback
+from ..utils.logging import LoggerMixin
+from ..utils.callbacks import create_wandb_callback
 
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='top_k_acc')

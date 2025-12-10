@@ -1,7 +1,7 @@
 import pandas as pd
 from collections import Counter
 from typing import List, Dict, Set, Optional, Tuple
-from ..utils import LoggerMixin
+from ..utils.logging import LoggerMixin
 
 
 class VocabularyBuilder(LoggerMixin):
@@ -217,7 +217,7 @@ class VocabularyBuilder(LoggerMixin):
             output_path: Output file path
             format: Export format ('json', 'txt')
         """
-        from ..utils import SerializationManager
+        from ..utils.serialization import SerializationManager
 
         if format == "json":
             SerializationManager.save_json(vocabulary, output_path)
@@ -242,7 +242,7 @@ class VocabularyBuilder(LoggerMixin):
         Returns:
             Vocabulary mapping
         """
-        from ..utils import SerializationManager
+        from ..utils.serialization import SerializationManager
 
         if format == "json":
             vocabulary = SerializationManager.load_json(input_path)
