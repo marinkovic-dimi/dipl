@@ -20,3 +20,11 @@ venv/
 # Ignore environment/config files
 .env
 .env.*
+
+# Ignore everything inside experiments/
+experiments/*
+
+# But keep the folder itself
+# !experiments/.gitkeep
+wandb
+wandb/
