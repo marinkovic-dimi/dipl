@@ -1,0 +1,22 @@
+# Ignore all Markdown files
+*.md
+
+# Python cache directories
+__pycache__/
+*.pyc
+*.pyo
+
+# Local cache directory
+cache/
+
+# Python virtual environment
+.venv/
+venv/
+
+# Claude-related files/folders
+.claude
+.claude/
+
+# Ignore environment/config files
+.env
+.env.*
