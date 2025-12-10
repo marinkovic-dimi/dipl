@@ -1,0 +1,100 @@
+project_name: "klasifikator"
+version: "1.0.0"
+experiment_name: null
+
+data:
+  raw_data_path: "data/telefoni_json.json"
+  processed_data_dir: "data/processed"
+
+  text_column: "text"
+  class_column: "group_id"
+  clean_text_column: "clean_text"
+
+  max_samples: 30000
+  min_samples_per_class: 10
+  max_samples_per_class: 125000
+  remove_ostalo_groups: true
+  ostalo_groups_file: "data/ostalo-grupe.csv"
+
+  val_size: 0.15
+  test_size: 0.15
+  random_state: 42
+
+tokenization:
+  vocab_size: 5000
+  max_length: 64
+  min_frequency: 2
+  special_tokens:
+    - "[PAD]"
+    - "[CLS]"
+    - "[UNK]"
+    - "[SEP]"
+    - "[MASK]"
+  use_cached_tokenizer: true
+  tokenizer_cache_dir: "cache/tokenizers"
+
+model:
+  embedding_dim: 256
+  num_heads: 8
+  num_layers: 4
+  ff_dim: 512
+  dropout_rate: 0.2
+  pooling_strategy: "cls"
+  label_smoothing: 0.0
+
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  batch_size: 32
+  epochs: 10
+
+  top_k: 3
+
+balancing:
+  strategy: "adaptive"
+
+  target_threshold: 3000
+  target_threshold_small: 500
+  increase_factor: 0.1
+  decrease_factor: 0.4
+  decrease_factor_small: 0.5
+
+  tier_limits:
+    small: 50
+    medium: 1000
+    large: 10000
+    xlarge: 20000
+    xxlarge: 50000
+    max: 125000
+
+training:
+  save_dir: "experiments"
+  model_name: "klasifikator"
+  save_best_only: true
+  patience: 3
+  monitor: "val_loss"
+  mode: "min"
+
+  reduce_lr_factor: 0.5
+  reduce_lr_patience: 2
+  min_lr: 0.000001
+
+  log_level: "INFO"
+  log_to_file: true
+  log_dir: "logs"
+
+  checkpoint_freq: "epoch"
+  save_frequency: 1
+
+wandb:
+  enabled: true
+  project: "klasifikator"
+  entity: null
+  name: null
+  tags:
+    - "transformer"
+    - "serbian"
+  notes: "Serbian ad classifier training"
+  log_model: true
+  log_gradients: false
+  log_frequency: 100
+  save_code: true
