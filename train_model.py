@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from src.models import classifier
-from src.utils import setup_logging
+from src.utils.logging import setup_logging
 from src.data import (SerbianTextPreprocessor, create_default_filters, StratifiedDataSplitter)
 from src.tokenization import WordPieceTokenizer
 from src.models import create_classifier_model, calculate_class_weights

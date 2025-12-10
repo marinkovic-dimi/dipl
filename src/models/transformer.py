@@ -1,7 +1,7 @@
 import tensorflow as tf
 import keras
 from typing import Optional
-from ..utils import LoggerMixin
+from ..utils.logging import LoggerMixin
 
 
 @keras.saving.register_keras_serializable(package='AdClassifier', name='TokenAndPositionEmbedding')

@@ -9,7 +9,8 @@ from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import WordPieceTrainer
 from tokenizers.models import WordPiece
 
-from ..utils import LoggerMixin, SerializationManager, ensure_dir
+from ..utils.logging import LoggerMixin
+from ..utils.serialization import SerializationManager, ensure_dir
 
 
 class EnhancedTokenizer(LoggerMixin):

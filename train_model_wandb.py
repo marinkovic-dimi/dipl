@@ -6,9 +6,9 @@ import numpy as np
 import json
 import tensorflow as tf
 from pathlib import Path
-from src.utils import (
-    setup_logging,
-    ConfigManager,
+from src.utils.logging import setup_logging
+from src.utils.config import ConfigManager
+from src.utils.callbacks import (
     TrainingPlotCallback,
     plot_confusion_matrix,
     plot_classification_report,
