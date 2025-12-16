@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Union
 
 from .config import Config
 from .data_config import DataConfig
@@ -18,11 +18,22 @@ class ConfigManager:
         self.config_dir.mkdir(exist_ok=True)
 
     @classmethod
-    def from_yaml(cls, config_path: str) -> Config:
+    def from_yaml(
+        cls,
+        config_path: str,
+        project_root: Optional[Union[str, Path]] = None
+    ) -> Config:
+        config_path = Path(config_path)
         with open(config_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
 
-        return cls._dict_to_config(config_dict)
+        config = cls._dict_to_config(config_dict)
+
+        if project_root is None:
+            project_root = config_path.resolve().parent.parent
+
+        config.resolve_paths(project_root)
+        return config
 
     @classmethod
     def _dict_to_config(cls, config_dict: Dict[str, Any]) -> Config:
