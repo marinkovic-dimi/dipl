@@ -1,4 +1,14 @@
 import sys
+from pathlib import Path
+
+_project_root = Path(__file__).resolve().parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 import argparse
 import pandas as pd
 import numpy as np
@@ -16,15 +26,6 @@ from src.data import StratifiedDataSplitter
 from src.data.preprocess import preprocess_data
 from src.tokenization import WordPieceTokenizer
 from src.models import AdClassifier, calculate_class_weights
-import os
-from pathlib import Path
-
-_project_root = Path(__file__).resolve().parent.parent.parent
-if str(_project_root) not in sys.path:
-    sys.path.insert(0, str(_project_root))
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
 def load_or_preprocess_data(config):
@@ -57,7 +58,7 @@ def load_or_preprocess_data(config):
 
 
 def main(config_path: str = "configs/default.yaml"):
-    config = ConfigManager.from_yaml(config_path)
+    config = ConfigManager.from_yaml(config_path, project_root=_project_root)
     config.config_path = config_path
 
     logger = setup_logging(
