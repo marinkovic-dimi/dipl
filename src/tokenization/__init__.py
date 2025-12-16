@@ -1,8 +1,16 @@
-from .tokenizer import EnhancedTokenizer, WordPieceTokenizer
-from .vocab_builder import VocabularyBuilder
+from .tokenizers import (
+    EnhancedTokenizer,
+    WordPieceTokenizer,
+    create_tokenizer,
+)
+
+from .vocabulary import (
+    VocabularyBuilder,
+)
 
 __all__ = [
     'EnhancedTokenizer',
     'WordPieceTokenizer',
-    'VocabularyBuilder'
+    'create_tokenizer',
+    'VocabularyBuilder',
 ]

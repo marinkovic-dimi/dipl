@@ -1,7 +1,7 @@
 import pandas as pd
 from collections import Counter
 from typing import List, Dict, Set, Optional, Tuple
-from ..utils.logging import LoggerMixin
+from ...utils.logging import LoggerMixin
 
 
 class VocabularyBuilder(LoggerMixin):
@@ -160,7 +160,7 @@ class VocabularyBuilder(LoggerMixin):
         output_path: str,
         format: str = "json"
     ) -> None:
-        from ..utils.serialization import SerializationManager
+        from ...utils.serialization import SerializationManager
 
         if format == "json":
             SerializationManager.save_json(vocabulary, output_path)
@@ -175,7 +175,7 @@ class VocabularyBuilder(LoggerMixin):
         self.logger.info(f"Vocabulary exported to {output_path}")
 
     def load_vocabulary(self, input_path: str, format: str = "json") -> Dict[str, int]:
-        from ..utils.serialization import SerializationManager
+        from ...utils.serialization import SerializationManager
 
         if format == "json":
             vocabulary = SerializationManager.load_json(input_path)

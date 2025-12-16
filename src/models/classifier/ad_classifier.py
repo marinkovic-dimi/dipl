@@ -2,18 +2,10 @@ import tensorflow as tf
 import keras
 from typing import Optional, Dict, Any, List
 from pathlib import Path
-from .transformer import TokenAndPositionEmbedding, MultiLayerTransformer, PoolingLayer
-from ..utils.logging import LoggerMixin
-from ..utils.callbacks import create_wandb_callback
-
-
-@keras.saving.register_keras_serializable(package='AdClassifier', name='top_k_acc')
-def top_k_acc(y_true, y_pred, k=3):
-    top_k_preds = tf.math.top_k(y_pred, k=k).indices
-    y_true = tf.cast(y_true, tf.int32)
-    top_k_preds = tf.cast(top_k_preds, tf.int32)
-    correct = tf.reduce_sum(tf.cast(tf.equal(y_true[:, None], top_k_preds), tf.float32), axis=1)
-    return tf.reduce_mean(correct)
+from ..layers import TokenAndPositionEmbedding, MultiLayerTransformer, PoolingLayer
+from .metrics import top_k_acc
+from ...utils.logging import LoggerMixin
+from ...utils.callbacks import create_wandb_callback
 
 
 class AdClassifier(LoggerMixin):
@@ -260,63 +252,3 @@ class AdClassifier(LoggerMixin):
 
         self.logger.info("Training completed")
         return history
-
-
-def create_classifier_model(
-    vocab_size: int,
-    num_classes: int,
-    config: Optional[Dict[str, Any]] = None
-) -> AdClassifier:
-    if config is None:
-        config = {}
-
-    default_config = {
-        'max_length': 100,
-        'embed_dim': 1024,
-        'num_heads': 8,
-        'num_layers': 2,
-        'ff_dim': 2048,
-        'dropout_rate': 0.1,
-        'pooling_strategy': 'cls',
-        'activation': 'relu',
-        'use_class_weights': False,
-        'label_smoothing': 0.0
-    }
-
-    final_config = {**default_config, **config}
-
-    classifier = AdClassifier(
-        vocab_size=vocab_size,
-        num_classes=num_classes,
-        **final_config
-    )
-
-    return classifier
-
-
-def calculate_class_weights(class_counts: Dict[int, int], strategy: str = 'balanced') -> Dict[int, float]:
-    if strategy == 'balanced':
-        total_samples = sum(class_counts.values())
-        num_classes = len(class_counts)
-
-        weights = {}
-        for class_id, count in class_counts.items():
-            weights[class_id] = total_samples / (num_classes * count)
-
-    elif strategy == 'inverse':
-        total_samples = sum(class_counts.values())
-        weights = {}
-        for class_id, count in class_counts.items():
-            weights[class_id] = total_samples / count
-
-    elif strategy == 'log':
-        import math
-        max_count = max(class_counts.values())
-        weights = {}
-        for class_id, count in class_counts.items():
-            weights[class_id] = math.log(max_count / count) + 1
-
-    else:
-        raise ValueError(f"Unsupported weighting strategy: {strategy}")
-
-    return weights

@@ -12,6 +12,6 @@ venv/
 experiments/*
 wandb
 wandb/
-data/
-data/*
+/data/
+/data/*
 logs/

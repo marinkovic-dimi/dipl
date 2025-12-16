@@ -3,14 +3,14 @@ import hashlib
 import pandas as pd
 import tensorflow as tf
 from pathlib import Path
-from typing import List, Dict, Union, Optional, Tuple
+from typing import List, Dict, Union, Optional
 from tokenizers import Tokenizer
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import WordPieceTrainer
 from tokenizers.models import WordPiece
 
-from ..utils.logging import LoggerMixin
-from ..utils.serialization import SerializationManager, ensure_dir
+from ...utils.logging import LoggerMixin
+from ...utils.serialization import SerializationManager, ensure_dir
 
 
 class EnhancedTokenizer(LoggerMixin):
@@ -223,32 +223,3 @@ class EnhancedTokenizer(LoggerMixin):
 
         if self.verbose:
             self.logger.info(f"Loaded tokenizer from {file_path}")
-
-
-class WordPieceTokenizer(EnhancedTokenizer):
-
-    def __init__(self, **kwargs):
-        default_kwargs = {
-            'vocab_size': 15000,
-            'min_frequency': 2,
-            'max_length': 100,
-            'special_tokens': ["[PAD]", "[CLS]", "[UNK]", "[SEP]", "[MASK]"]
-        }
-        default_kwargs.update(kwargs)
-        super().__init__(**default_kwargs)
-
-    def _preprocess_text_for_tokenization(self, text: str) -> str:
-        text = super()._preprocess_text_for_tokenization(text)
-        return text
-
-
-def create_tokenizer(
-    tokenizer_type: str = "wordpiece",
-    **kwargs
-) -> EnhancedTokenizer:
-    if tokenizer_type == "wordpiece":
-        return WordPieceTokenizer(**kwargs)
-    elif tokenizer_type == "enhanced":
-        return EnhancedTokenizer(**kwargs)
-    else:
-        raise ValueError(f"Unsupported tokenizer type: {tokenizer_type}")

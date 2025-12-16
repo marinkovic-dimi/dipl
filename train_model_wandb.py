@@ -12,7 +12,8 @@ from src.utils.callbacks import (
     plot_classification_report,
     plot_cumulative_accuracy
 )
-from src.data import SerbianTextPreprocessor, create_default_filters, StratifiedDataSplitter
+from src.data import StratifiedDataSplitter
+from src.data.preprocess import preprocess_data
 from src.tokenization import WordPieceTokenizer
 from src.models import AdClassifier, calculate_class_weights
 import os
@@ -21,26 +22,38 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
-def load_ad_data(json_path: str, max_samples: int = 10000):
-    """Load ad data from JSON file."""
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+def load_or_preprocess_data(config):
+    processed_path = Path(config.data.processed_data_dir) / "processed_data.csv"
+    metadata_path = Path(config.data.processed_data_dir) / "metadata.json"
 
-    ads = data['data'][:max_samples]
+    if processed_path.exists() and metadata_path.exists():
+        logger = setup_logging(log_level=config.training.log_level)
+        logger.info(f"Loading preprocessed data from {processed_path}")
 
-    df = pd.DataFrame({
-        'text': [ad['name'] for ad in ads],
-        'group_id': [ad['group_id'] for ad in ads]
-    })
+        data = pd.read_csv(processed_path, encoding='utf-8')
 
-    return df
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+
+        logger.info(f"Loaded {metadata['total_samples']} samples with {metadata['num_classes']} classes")
+        return data, metadata
+    else:
+        logger = setup_logging(log_level=config.training.log_level)
+        logger.info("Preprocessed data not found. Running preprocessing pipeline...")
+
+        preprocess_data(config_path=config.config_path)
+
+        data = pd.read_csv(processed_path, encoding='utf-8')
+
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+
+        return data, metadata
 
 
 def main(config_path: str = "configs/default.yaml"):
-    """Run training with W&B logging using config from YAML file."""
-
-    # Load configuration
     config = ConfigManager.from_yaml(config_path)
+    config.config_path = config_path
 
     logger = setup_logging(
         log_level=config.training.log_level,
@@ -48,57 +61,31 @@ def main(config_path: str = "configs/default.yaml"):
     )
 
     logger.info("=" * 60)
-    logger.info("TRAINING: Serbian Ad Classifier with W&B Logging")
+    logger.info("TRAINING: Klasifikator")
     logger.info("=" * 60)
     logger.info(f"Config loaded from: {config_path}")
     logger.info(f"Experiment: {config.experiment_name}")
 
-    # Update W&B run name with timestamp
     if config.wandb.name is None:
         config.wandb.name = f"train_{config.timestamp}"
 
-    logger.info("\n[1/6] LOADING DATA")
+    logger.info("\n[1/5] LOADING DATA")
     logger.info("-" * 60)
 
-    data = load_ad_data(config.data.raw_data_path, max_samples=config.data.max_samples)
+    data, metadata = load_or_preprocess_data(config)
 
-    logger.info(f"Loaded {len(data)} ads from {config.data.raw_data_path}")
-    logger.info(f"Unique categories: {data[config.data.class_column].nunique()}")
-    logger.info(f"Class distribution (top 10):\n{data[config.data.class_column].value_counts().head(10)}")
+    logger.info(f"Dataset: {len(data)} samples, {metadata['num_classes']} classes")
+    logger.info(f"Columns: {metadata['columns']}")
+    logger.info(f"Class distribution (top 10):\n{data[metadata['class_column']].value_counts().head(10)}")
 
-    logger.info("\n[2/6] TEXT PREPROCESSING")
+    logger.info("\n[2/5] SPLITTING DATA")
     logger.info("-" * 60)
 
-    preprocessor = SerbianTextPreprocessor(
-        transliterate_cyrillic=True,
-        lowercase=True,
-        remove_stop_words=False,
-        verbose=False
-    )
-
-    data = preprocessor.preprocess_dataframe(
-        data,
-        config.data.text_column,
-        config.data.clean_text_column
-    )
-
-    logger.info(f"Example:\n  Original: {data[config.data.text_column].iloc[0]}\n  Cleaned:  {data[config.data.clean_text_column].iloc[0]}")
-
-    logger.info("\n[3/6] FILTERING DATA")
-    logger.info("-" * 60)
-
-    filters = create_default_filters(
-        config.data.class_column,
-        config.data.clean_text_column,
-        min_samples_per_class=config.data.min_samples_per_class,
-        remove_ostalo=config.data.remove_ostalo_groups
-    )
-    data = filters.filter(data)
-
-    logger.info(f"After filtering: {len(data)} samples, {data[config.data.class_column].nunique()} classes")
+    class_col = metadata['class_column']
+    clean_text_col = metadata['clean_text_column']
 
     splitter = StratifiedDataSplitter(
-        config.data.class_column,
+        class_col,
         val_size=config.data.val_size,
         test_size=config.data.test_size,
         verbose=True
@@ -107,7 +94,7 @@ def main(config_path: str = "configs/default.yaml"):
 
     logger.info(f"Split sizes: Train={len(train_data)}, Val={len(val_data)}, Test={len(test_data)}")
 
-    logger.info("\n[4/6] TOKENIZATION")
+    logger.info("\n[3/5] TOKENIZATION")
     logger.info("-" * 60)
 
     tokenizer = WordPieceTokenizer(
@@ -116,30 +103,30 @@ def main(config_path: str = "configs/default.yaml"):
         verbose=True
     )
     tokenizer.train(
-        train_data[config.data.clean_text_column],
+        train_data[clean_text_col],
         use_cache=config.tokenization.use_cached_tokenizer
     )
 
     logger.info(f"Vocabulary size: {tokenizer.get_vocab_size()}")
     logger.info(f"Max sequence length: {tokenizer.max_length}")
 
-    X_train = tokenizer.encode_batch(train_data[config.data.clean_text_column].tolist())
-    X_val = tokenizer.encode_batch(val_data[config.data.clean_text_column].tolist())
-    X_test = tokenizer.encode_batch(test_data[config.data.clean_text_column].tolist())
+    X_train = tokenizer.encode_batch(train_data[clean_text_col].tolist())
+    X_val = tokenizer.encode_batch(val_data[clean_text_col].tolist())
+    X_test = tokenizer.encode_batch(test_data[clean_text_col].tolist())
 
-    unique_classes = sorted(data[config.data.class_column].unique())
+    unique_classes = sorted(data[class_col].unique())
     class_map = {old_id: new_id for new_id, old_id in enumerate(unique_classes)}
 
-    y_train = np.array([class_map[x] for x in train_data[config.data.class_column].values])
-    y_val = np.array([class_map[x] for x in val_data[config.data.class_column].values])
-    y_test = np.array([class_map[x] for x in test_data[config.data.class_column].values])
+    y_train = np.array([class_map[x] for x in train_data[class_col].values])
+    y_val = np.array([class_map[x] for x in val_data[class_col].values])
+    y_test = np.array([class_map[x] for x in test_data[class_col].values])
 
     num_classes = len(unique_classes)
 
     logger.info(f"Tokenized data shapes: X_train={X_train.shape}, y_train={y_train.shape}")
     logger.info(f"Number of classes: {num_classes}")
 
-    logger.info("\n[5/6] MODEL TRAINING")
+    logger.info("\n[4/5] MODEL TRAINING")
     logger.info("-" * 60)
 
     classifier = AdClassifier(
@@ -171,16 +158,13 @@ def main(config_path: str = "configs/default.yaml"):
 
     logger.info(f"Training with {len(class_weights)} class weights")
 
-    # Setup output directory
     model_dir = Path(config.training.save_dir) / f'model_wandb_{config.timestamp}'
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save config to experiment directory
     config_manager = ConfigManager(config_dir=str(model_dir))
     config_manager.save_config(config, 'config.yaml')
     logger.info(f"Config saved to: {model_dir / 'config.yaml'}")
 
-    # Callbacks
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor=config.training.monitor,
         patience=config.training.patience,
@@ -226,7 +210,7 @@ def main(config_path: str = "configs/default.yaml"):
         verbose=1
     )
 
-    logger.info("\n[6/6] EVALUATION & SAVING")
+    logger.info("\n[5/5] EVALUATION & SAVING")
     logger.info("-" * 60)
 
     test_results = classifier.model.evaluate(X_test, y_test, verbose=0)
@@ -235,12 +219,10 @@ def main(config_path: str = "configs/default.yaml"):
     logger.info(f"Test Accuracy: {test_results[1]:.4f}")
     logger.info(f"Test Top-3 Accuracy: {test_results[2]:.4f}")
 
-    # Generate predictions for evaluation plots
     logger.info("\nGenerating evaluation plots...")
     y_pred_proba = classifier.predict(X_test)
     y_pred = np.argmax(y_pred_proba, axis=1)
 
-    # Confusion matrix
     plot_confusion_matrix(
         y_true=y_test,
         y_pred=y_pred,
@@ -248,7 +230,6 @@ def main(config_path: str = "configs/default.yaml"):
         title='Test Set Confusion Matrix'
     )
 
-    # Classification report
     report = plot_classification_report(
         y_true=y_test,
         y_pred=y_pred,
@@ -256,13 +237,11 @@ def main(config_path: str = "configs/default.yaml"):
         top_n=min(20, num_classes)
     )
 
-    # Save classification report as JSON
     report_path = model_dir / 'classification_report.json'
     with open(report_path, 'w') as f:
         json.dump(report, f, indent=2)
     logger.info(f"Classification report saved to: {report_path}")
 
-    # Cumulative accuracy plot
     cumulative_acc = plot_cumulative_accuracy(
         y_true=y_test,
         y_pred_proba=y_pred_proba,
@@ -271,7 +250,6 @@ def main(config_path: str = "configs/default.yaml"):
     )
     logger.info(f"Cumulative accuracy: {cumulative_acc}")
 
-    # Save model artifacts
     model_path = model_dir / 'classifier.keras'
     classifier.save_model(str(model_path), save_format='keras')
     logger.info(f"Model saved to: {model_path}")
@@ -286,7 +264,6 @@ def main(config_path: str = "configs/default.yaml"):
         json.dump(class_map_serializable, f, indent=2)
     logger.info(f"Class mapping saved to: {class_map_path}")
 
-    # Save metadata
     metadata = {
         'timestamp': config.timestamp,
         'experiment_name': config.experiment_name,
@@ -325,7 +302,7 @@ def main(config_path: str = "configs/default.yaml"):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Train Serbian Ad Classifier with W&B')
+    parser = argparse.ArgumentParser(description='Klasifikator')
     parser.add_argument(
         '--config',
         type=str,

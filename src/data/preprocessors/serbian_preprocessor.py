@@ -1,45 +1,8 @@
 import re
 import pandas as pd
-from abc import ABC, abstractmethod
-from typing import List, Set, Union, Optional, Callable
-from ..utils import LoggerMixin, SERBIAN_STOP_WORDS
-
-
-class TextPreprocessor(ABC, LoggerMixin):
-
-    def __init__(self, verbose: bool = True):
-        self.verbose = verbose
-
-    @abstractmethod
-    def preprocess_text(self, text: str) -> str:
-        pass
-
-    def preprocess_dataframe(
-        self,
-        data: pd.DataFrame,
-        text_column: str,
-        output_column: str,
-        inplace: bool = False
-    ) -> pd.DataFrame:
-        if not inplace:
-            data = data.copy()
-
-        if self.verbose:
-            self.logger.info(f"Preprocessing text column '{text_column}' -> '{output_column}'")
-
-        data[output_column] = data[text_column].apply(self.preprocess_text)
-
-        empty_mask = data[output_column].str.strip() == ''
-        if empty_mask.any():
-            empty_count = empty_mask.sum()
-            data = data[~empty_mask]
-            if self.verbose:
-                self.logger.warning(f"Removed {empty_count} rows with empty preprocessed text")
-
-        if self.verbose:
-            self.logger.info(f"Preprocessing complete. Final dataset size: {len(data)} rows")
-
-        return data
+from typing import List, Set, Optional, Callable
+from .base import TextPreprocessor
+from ...utils import SERBIAN_STOP_WORDS
 
 
 class SerbianTextPreprocessor(TextPreprocessor):
@@ -156,52 +119,3 @@ class SerbianTextPreprocessor(TextPreprocessor):
         stats['empty_after_preprocessing'] = (preprocessed.str.strip() == '').sum()
 
         return stats
-
-
-class BasicTextPreprocessor(TextPreprocessor):
-
-    def __init__(
-        self,
-        lowercase: bool = True,
-        remove_punctuation: bool = True,
-        remove_extra_whitespace: bool = True,
-        min_word_length: int = 2,
-        verbose: bool = True
-    ):
-        super().__init__(verbose)
-        self.lowercase = lowercase
-        self.remove_punctuation = remove_punctuation
-        self.remove_extra_whitespace = remove_extra_whitespace
-        self.min_word_length = min_word_length
-
-    def preprocess_text(self, text: str) -> str:
-        if pd.isna(text) or not isinstance(text, str):
-            return ""
-
-        if self.lowercase:
-            text = text.lower()
-
-        if self.remove_punctuation:
-            text = re.sub(r'[^\w\s]', ' ', text)
-
-        if self.remove_extra_whitespace:
-            text = re.sub(r'\s+', ' ', text).strip()
-
-        if self.min_word_length > 1:
-            words = text.split()
-            words = [word for word in words if len(word) >= self.min_word_length]
-            text = " ".join(words)
-
-        return text
-
-
-def create_preprocessor(
-    preprocessor_type: str = "serbian",
-    **kwargs
-) -> TextPreprocessor:
-    if preprocessor_type == "serbian":
-        return SerbianTextPreprocessor(**kwargs)
-    elif preprocessor_type == "basic":
-        return BasicTextPreprocessor(**kwargs)
-    else:
-        raise ValueError(f"Unsupported preprocessor type: {preprocessor_type}")
