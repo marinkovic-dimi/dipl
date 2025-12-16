@@ -1,7 +1,17 @@
+import sys
+from pathlib import Path
+
+_project_root = Path(__file__).resolve().parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 import pandas as pd
 import numpy as np
 import json
-from pathlib import Path
 from datetime import datetime
 from src.models import classifier
 from src.utils.logging import setup_logging
@@ -9,14 +19,12 @@ from src.data import StratifiedDataSplitter
 from src.data.preprocess import preprocess_data
 from src.tokenization import WordPieceTokenizer
 from src.models import create_classifier_model, calculate_class_weights
-import os
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 
 def load_or_preprocess_data(processed_data_path: str = "data/processed/processed_data.csv"):
     processed_path = Path(processed_data_path)
+    if not processed_path.is_absolute():
+        processed_path = _project_root / processed_path
     metadata_path = processed_path.parent / "metadata.json"
 
     if processed_path.exists() and metadata_path.exists():
@@ -34,7 +42,8 @@ def load_or_preprocess_data(processed_data_path: str = "data/processed/processed
         logger = setup_logging(log_level='INFO')
         logger.info("Preprocessed data not found. Running preprocessing pipeline...")
 
-        preprocess_data(config_path="configs/default.yaml")
+        config_path = str(_project_root / "configs/default.yaml")
+        preprocess_data(config_path=config_path)
 
         data = pd.read_csv(processed_path, encoding='utf-8')
 
@@ -145,7 +154,7 @@ def main():
     logger.info(f"Test Top-3 Accuracy: {test_results[2]:.4f}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_dir = Path('experiments') / f'model_{timestamp}'
+    model_dir = _project_root / 'experiments' / f'model_{timestamp}'
     model_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = model_dir / 'classifier.keras'

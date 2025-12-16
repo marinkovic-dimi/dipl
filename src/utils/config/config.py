@@ -1,8 +1,7 @@
-"""Main configuration class that aggregates all config components."""
-
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 from .data_config import DataConfig
 from .tokenization_config import TokenizationConfig
@@ -29,3 +28,23 @@ class Config:
     def __post_init__(self):
         if self.experiment_name is None:
             self.experiment_name = f"{self.project_name}_{self.timestamp}"
+
+    def resolve_paths(self, project_root: Union[str, Path]) -> "Config":
+        root = Path(project_root)
+
+        def resolve(path_str: str) -> str:
+            p = Path(path_str)
+            if not p.is_absolute():
+                return str(root / p)
+            return path_str
+
+        self.data.raw_data_path = resolve(self.data.raw_data_path)
+        self.data.processed_data_dir = resolve(self.data.processed_data_dir)
+        self.data.ostalo_groups_file = resolve(self.data.ostalo_groups_file)
+
+        self.tokenization.tokenizer_cache_dir = resolve(self.tokenization.tokenizer_cache_dir)
+        
+        self.training.save_dir = resolve(self.training.save_dir)
+        self.training.log_dir = resolve(self.training.log_dir)
+
+        return self

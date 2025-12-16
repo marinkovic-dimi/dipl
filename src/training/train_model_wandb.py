@@ -1,9 +1,13 @@
+import sys
+from pathlib import Path
+_project_root = Path(__file__).resolve().parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 import argparse
 import pandas as pd
 import numpy as np
 import json
 import tensorflow as tf
-from pathlib import Path
 from src.utils.logging import setup_logging
 from src.utils.config import ConfigManager
 from src.utils.callbacks import (
@@ -54,6 +58,7 @@ def load_or_preprocess_data(config):
 def main(config_path: str = "configs/default.yaml"):
     config = ConfigManager.from_yaml(config_path)
     config.config_path = config_path
+    config.resolve_paths(_project_root)
 
     logger = setup_logging(
         log_level=config.training.log_level,
@@ -307,8 +312,12 @@ if __name__ == "__main__":
         '--config',
         type=str,
         default='configs/default.yaml',
-        help='Path to YAML config file'
+        help='Path to YAML config file (relative to project root or absolute)'
     )
     args = parser.parse_args()
 
-    main(config_path=args.config)
+    config_path = Path(args.config)
+    if not config_path.is_absolute():
+        config_path = _project_root / config_path
+
+    main(config_path=str(config_path))
