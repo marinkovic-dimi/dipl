@@ -31,6 +31,9 @@ from .splitters import (
     create_data_splitter,
 )
 
+from .balancer import DataBalancer, BalancingStats
+from .preprocess import get_preprocessing_hash, get_processed_data_path
+
 __all__ = [
     'DataLoader',
     'JSONDataLoader',
@@ -53,4 +56,8 @@ __all__ = [
     'RandomDataSplitter',
     'TimeBasedDataSplitter',
     'create_data_splitter',
+    'DataBalancer',
+    'BalancingStats',
+    'get_preprocessing_hash',
+    'get_processed_data_path',
 ]

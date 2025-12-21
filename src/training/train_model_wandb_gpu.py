@@ -25,15 +25,16 @@ from src.utils.callbacks import (
     plot_classification_report,
     plot_cumulative_accuracy
 )
-from src.data import StratifiedDataSplitter
-from src.data.preprocess import preprocess_data
+from src.data import StratifiedDataSplitter, DataBalancer
+from src.data.preprocess import preprocess_data, get_processed_data_path
 from src.tokenization import WordPieceTokenizer
 from src.models import AdClassifier, calculate_class_weights
 
 
 def load_or_preprocess_data(config):
-    processed_path = Path(config.data.processed_data_dir) / "processed_data.csv"
-    metadata_path = Path(config.data.processed_data_dir) / "metadata.json"
+    processed_dir = get_processed_data_path(config.data)
+    processed_path = processed_dir / "processed_data.csv"
+    metadata_path = processed_dir / "metadata.json"
 
     if processed_path.exists() and metadata_path.exists():
         logger = setup_logging(log_level=config.training.log_level)
@@ -102,6 +103,20 @@ def main(config_path: str = "configs/default.yaml"):
     train_data, val_data, test_data = splitter.split(data)
 
     logger.info(f"Split sizes: Train={len(train_data)}, Val={len(val_data)}, Test={len(test_data)}")
+
+    balancer = None
+    if config.balancing.strategy != "none":
+        logger.info("\n[2.5/5] BALANCING TRAINING DATA")
+        logger.info("-" * 60)
+
+        balancer = DataBalancer(
+            config=config.balancing,
+            class_column=class_col,
+            random_state=config.data.random_state
+        )
+        train_data = balancer.balance(train_data)
+
+        logger.info(f"Balanced train size: {len(train_data)}")
 
     logger.info("\n[3/5] TOKENIZATION")
     logger.info("-" * 60)
@@ -173,6 +188,10 @@ def main(config_path: str = "configs/default.yaml"):
     config_manager = ConfigManager(config_dir=str(model_dir))
     config_manager.save_config(config, 'config.yaml')
     logger.info(f"Config saved to: {model_dir / 'config.yaml'}")
+
+    if balancer is not None and balancer.stats is not None:
+        balancer.plot_balancing_stats(output_path=str(model_dir / 'balancing_stats.png'))
+        balancer.save_stats_json(output_path=str(model_dir / 'balancing_stats.json'))
 
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor=config.training.monitor,

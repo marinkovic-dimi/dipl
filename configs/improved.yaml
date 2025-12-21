@@ -1,9 +1,9 @@
 project_name: "klasifikator"
 version: "1.0.0"
-experiment_name: null
+experiment_name: "improved_v1"
 
 data:
-  raw_data_path: "data/oglasi_za_treniranje.json"
+  raw_data_path: "data/telefoni_json.json"
   processed_data_dir: "data/processed"
 
   text_column: "text"
@@ -11,9 +11,9 @@ data:
   clean_text_column: "clean_text"
 
   max_samples: 10000000
-  min_samples_per_class: 50
+  min_samples_per_class: 100
   max_samples_per_class: 1000000
-  remove_ostalo_groups: true
+  remove_ostalo_groups: false
   ostalo_groups_file: "data/ostalo-grupe.csv"
 
   val_size: 0.15
@@ -21,9 +21,9 @@ data:
   random_state: 42
 
 tokenization:
-  vocab_size: 15000
-  max_length: 64
-  min_frequency: 2
+  vocab_size: 20000
+  max_length: 96
+  min_frequency: 3
   special_tokens:
     - "[PAD]"
     - "[CLS]"
@@ -34,43 +34,43 @@ tokenization:
   tokenizer_cache_dir: "cache/tokenizers"
 
 model:
-  embedding_dim: 256
+  embedding_dim: 384
   num_heads: 8
-  num_layers: 2
-  ff_dim: 512
-  dropout_rate: 0.2
-  pooling_strategy: "cls"
-  label_smoothing: 0.0
+  num_layers: 3
+  ff_dim: 768
+  dropout_rate: 0.3
+  pooling_strategy: "attention"
+  label_smoothing: 0.1
 
-  learning_rate: 0.0001
+  learning_rate: 0.0003
   weight_decay: 0.01
-  batch_size: 32
-  epochs: 20
+  batch_size: 64
+  epochs: 30
 
-  top_k: 3
+  top_k: 5
 
 balancing:
   strategy: "adaptive"
 
-  target_threshold: 3000
-  target_threshold_small: 500
-  increase_factor: 0.1
-  decrease_factor: 0.4
-  decrease_factor_small: 0.5
+  target_threshold: 2000
+  target_threshold_small: 300
+  increase_factor: 0.15
+  decrease_factor: 0.5
+  decrease_factor_small: 0.6
 
   tier_limits:
-    small: 50
-    medium: 1000
-    large: 10000
-    xlarge: 20000
-    xxlarge: 50000
-    max: 125000
+    small: 100
+    medium: 500
+    large: 5000
+    xlarge: 15000
+    xxlarge: 40000
+    max: 100000
 
 training:
   save_dir: "experiments"
-  model_name: "klasifikator"
+  model_name: "klasifikator_improved"
   save_best_only: true
-  patience: 3
+  patience: 5
   monitor: "val_loss"
   mode: "min"
 
@@ -89,11 +89,12 @@ wandb:
   enabled: true
   project: "klasifikator"
   entity: null
-  name: null
+  name: "improved_v1"
   tags:
     - "transformer"
     - "serbian"
-  notes: "Klasifikator"
+    - "improved"
+  notes: "Improved config: larger model, attention pooling, label smoothing"
   log_model: true
   log_gradients: false
   log_frequency: 100

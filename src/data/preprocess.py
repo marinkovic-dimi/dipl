@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 from pathlib import Path
 
 from ..utils.config.data_config import DataConfig
@@ -9,6 +10,23 @@ from .preprocessors import SerbianTextPreprocessor
 from .filters import create_default_filters
 import pandas as pd
 
+
+def get_preprocessing_hash(data_config: DataConfig) -> str:
+    hash_params = {
+        'raw_data_path': str(data_config.raw_data_path),
+        'min_samples_per_class': data_config.min_samples_per_class,
+        'max_samples_per_class': data_config.max_samples_per_class,
+        'remove_ostalo_groups': data_config.remove_ostalo_groups,
+        'ostalo_groups_file': str(data_config.ostalo_groups_file) if data_config.remove_ostalo_groups else None,
+    }
+    hash_str = str(sorted(hash_params.items()))
+    return hashlib.md5(hash_str.encode()).hexdigest()[:8]
+
+
+def get_processed_data_path(data_config: DataConfig) -> Path:
+    base_dir = Path(data_config.processed_data_dir)
+    config_hash = get_preprocessing_hash(data_config)
+    return base_dir / config_hash
 
 
 def preprocess_data(config_path: str = "configs/default.yaml"):
@@ -23,9 +41,11 @@ def preprocess_data(config_path: str = "configs/default.yaml"):
     data_config = config.data
 
     raw_data_path = data_config.raw_data_path
-    processed_data_dir = Path(data_config.processed_data_dir)
+    processed_data_dir = get_processed_data_path(data_config)
+    config_hash = get_preprocessing_hash(data_config)
 
     logger.info(f"Raw data path: {raw_data_path}")
+    logger.info(f"Config hash: {config_hash}")
     logger.info(f"Processed data directory: {processed_data_dir}")
 
     processed_data_dir.mkdir(parents=True, exist_ok=True)
