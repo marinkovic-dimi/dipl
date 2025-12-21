@@ -3,7 +3,7 @@ version: "1.0.0"
 experiment_name: "improved_v1"
 
 data:
-  raw_data_path: "data/telefoni_json.json"
+  raw_data_path: "data/oglasi_za_treniranje.json"
   processed_data_dir: "data/processed"
 
   text_column: "text"
