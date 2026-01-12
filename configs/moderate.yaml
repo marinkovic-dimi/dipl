@@ -1,0 +1,101 @@
+project_name: "klasifikator"
+version: "1.0.0"
+experiment_name: "moderate_v1"
+
+data:
+  raw_data_path: "data/oglasi_za_treniranje.json"
+  processed_data_dir: "data/processed"
+
+  text_column: "text"
+  class_column: "group_id"
+  clean_text_column: "clean_text"
+
+  max_samples: 10000000
+  min_samples_per_class: 100
+  max_samples_per_class: 1000000
+  remove_ostalo_groups: false
+  ostalo_groups_file: "data/ostalo-grupe.csv"
+
+  val_size: 0.10
+  test_size: 0.10
+  random_state: 42
+
+tokenization:
+  vocab_size: 15000
+  max_length: 64
+  min_frequency: 2
+  special_tokens:
+    - "[PAD]"
+    - "[CLS]"
+    - "[UNK]"
+    - "[SEP]"
+    - "[MASK]"
+  use_cached_tokenizer: true
+  tokenizer_cache_dir: "cache/tokenizers"
+
+model:
+  embedding_dim: 512
+  num_heads: 8
+  num_layers: 4
+  ff_dim: 2048
+  dropout_rate: 0.1
+  pooling_strategy: "cls"
+  label_smoothing: 0
+
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  batch_size: 64
+  epochs: 50
+
+  top_k: 5
+
+balancing:
+  strategy: "adaptive"
+
+  target_threshold: 10000
+  target_threshold_small: 200
+  increase_factor: 0.15
+  decrease_factor: 0.35
+  decrease_factor_small: 0.45
+
+  tier_limits:
+    small: 50
+    medium: 1000
+    large: 10000
+    xlarge: 20000
+    xxlarge: 50000
+    max: 125000
+
+training:
+  save_dir: "experiments"
+  model_name: "klasifikator_moderate"
+  save_best_only: true
+  patience: 5
+  monitor: "val_loss"
+  mode: "min"
+
+  reduce_lr_factor: 0.5
+  reduce_lr_patience: 3
+  min_lr: 0.000001
+
+  log_level: "INFO"
+  log_to_file: true
+  log_dir: "logs"
+
+  checkpoint_freq: "epoch"
+  save_frequency: 1
+
+wandb:
+  enabled: true
+  project: "klasifikator"
+  entity: null
+  name: "moderate_v1"
+  tags:
+    - "transformer"
+    - "serbian"
+    - "moderate"
+  notes: "Moderate config: balanced between default and improved"
+  log_model: true
+  log_gradients: true
+  log_frequency: 100
+  save_code: true

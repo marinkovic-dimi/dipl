@@ -109,7 +109,8 @@ class AdClassifier(LoggerMixin):
         if optimizer.lower() == 'adamw':
             opt = keras.optimizers.AdamW(
                 learning_rate=learning_rate,
-                weight_decay=weight_decay
+                weight_decay=weight_decay,
+                clipnorm=1.0
             )
         elif optimizer.lower() == 'adam':
             opt = keras.optimizers.Adam(learning_rate=learning_rate)
@@ -239,7 +240,8 @@ class AdClassifier(LoggerMixin):
             'batch_size': batch_size,
             'validation_data': (x_val, y_val),
             'callbacks': callbacks,
-            'verbose': verbose
+            'verbose': verbose,
+            'shuffle': True
         }
 
         if self.class_weights is not None:
