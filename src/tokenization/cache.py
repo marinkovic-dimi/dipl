@@ -157,6 +157,31 @@ class TokenizedDatasetCache(LoggerMixin):
 
         return all_exist
 
+    def _convert_numpy_types(self, obj: Any) -> Any:
+        """
+        Recursively convert numpy types to native Python types for JSON serialization.
+
+        Args:
+            obj: Object to convert (can be dict, list, numpy type, etc.)
+
+        Returns:
+            Object with all numpy types converted to native Python types
+        """
+        if isinstance(obj, dict):
+            return {self._convert_numpy_types(k): self._convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._convert_numpy_types(item) for item in obj]
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, np.bool_):
+            return bool(obj)
+        else:
+            return obj
+
     def save(
         self,
         cache_key: str,
@@ -215,9 +240,10 @@ class TokenizedDatasetCache(LoggerMixin):
                 'y': str(y_train.dtype)
             }
 
-            # Save metadata
+            # Save metadata (convert numpy types to native Python types)
+            metadata_serializable = self._convert_numpy_types(metadata)
             with open(cache_path / 'metadata.json', 'w', encoding='utf-8') as f:
-                json.dump(metadata, f, indent=2, ensure_ascii=False)
+                json.dump(metadata_serializable, f, indent=2, ensure_ascii=False)
 
             if self.verbose:
                 self.logger.info(f"✓ Saved tokenized dataset cache: {cache_key}")
