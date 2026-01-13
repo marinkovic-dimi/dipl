@@ -32,6 +32,8 @@ tokenization:
     - "[MASK]"
   use_cached_tokenizer: true
   tokenizer_cache_dir: "cache/tokenizers"
+  use_tokenized_cache: true
+  tokenized_cache_dir: "cache/tokenized_datasets"
 
 model:
   embedding_dim: 384

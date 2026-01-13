@@ -1,0 +1,112 @@
+project_name: "klasifikator"
+version: "1.0.0"
+experiment_name: "moderate_optimized_v1"
+
+data:
+  raw_data_path: "data/oglasi_za_treniranje.json"
+  processed_data_dir: "data/processed"
+
+  text_column: "text"
+  class_column: "group_id"
+  clean_text_column: "clean_text"
+
+  max_samples: 10000000
+  min_samples_per_class: 100
+  max_samples_per_class: 1000000
+  remove_ostalo_groups: false
+  ostalo_groups_file: "data/ostalo-grupe.csv"
+
+  # OPTIMIZED: Increased validation set for stability with 1497 classes
+  val_size: 0.15  # was: 0.10
+  test_size: 0.15  # was: 0.10
+  random_state: 42
+
+tokenization:
+  vocab_size: 15000
+  # OPTIMIZED: Increased max_length to reduce truncation
+  max_length: 96  # was: 64
+  min_frequency: 2
+  special_tokens:
+    - "[PAD]"
+    - "[CLS]"
+    - "[UNK]"
+    - "[SEP]"
+    - "[MASK]"
+  use_cached_tokenizer: true
+  tokenizer_cache_dir: "cache/tokenizers"
+  # NEW: Enable tokenized dataset caching (implemented)
+  use_tokenized_cache: true
+  tokenized_cache_dir: "cache/tokenized_datasets"
+
+model:
+  # OPTIMIZED: Reduced complexity for faster learning
+  embedding_dim: 384  # was: 512 (25% smaller)
+  num_heads: 8
+  num_layers: 3  # was: 4 (one less layer)
+  ff_dim: 1024  # was: 2048 (50% smaller)
+
+  # OPTIMIZED: Increased regularization
+  dropout_rate: 0.2  # was: 0.1 (2x more dropout)
+  pooling_strategy: "attention"  # was: "cls" (better for multi-class)
+  label_smoothing: 0.1  # was: 0 (NOW WORKS after bug fix!)
+
+  # OPTIMIZED: Faster learning
+  learning_rate: 0.0003  # was: 0.0001 (3x faster)
+  weight_decay: 0.01
+  batch_size: 128  # was: 64 (2x larger for stability)
+  epochs: 20  # was: 50 (sufficient with faster LR)
+
+  top_k: 5
+
+balancing:
+  strategy: "adaptive"
+
+  # OPTIMIZED: More balanced approach
+  target_threshold: 3000  # was: 10000 (less aggressive)
+  target_threshold_small: 250  # was: 200
+  increase_factor: 0.15
+  decrease_factor: 0.5  # was: 0.35 (less reduction)
+  decrease_factor_small: 0.5  # was: 0.45
+
+  tier_limits:
+    small: 100
+    medium: 1000
+    large: 5000
+    xlarge: 15000
+    xxlarge: 40000
+    max: 100000
+
+training:
+  save_dir: "experiments"
+  model_name: "klasifikator_moderate_optimized"
+  save_best_only: true
+  patience: 7  # was: 5 (more patience with regularization)
+  monitor: "val_loss"
+  mode: "min"
+
+  reduce_lr_factor: 0.5
+  reduce_lr_patience: 3
+  min_lr: 0.000001
+
+  log_level: "INFO"
+  log_to_file: true
+  log_dir: "logs"
+
+  checkpoint_freq: "epoch"
+  save_frequency: 1
+
+wandb:
+  enabled: true
+  project: "klasifikator"
+  entity: null
+  name: "moderate_optimized_v1"
+  tags:
+    - "transformer"
+    - "serbian"
+    - "moderate-optimized"
+    - "bugfix"
+  notes: "Optimized moderate config with bug fixes: label_smoothing now works, reduced complexity, faster LR, better regularization, larger val set"
+  log_model: true
+  log_gradients: false
+  log_frequency: 100
+  save_code: true

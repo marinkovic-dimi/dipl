@@ -9,3 +9,5 @@ class TokenizationConfig:
     special_tokens: list = field(default_factory=lambda: ["[PAD]", "[CLS]", "[UNK]", "[SEP]", "[MASK]"])
     use_cached_tokenizer: bool = True
     tokenizer_cache_dir: str = "cache/tokenizers"
+    use_tokenized_cache: bool = True
+    tokenized_cache_dir: str = "cache/tokenized_datasets"

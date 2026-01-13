@@ -77,18 +77,11 @@ class AdClassifier(LoggerMixin):
 
         dense_output = keras.layers.Dropout(self.dropout_rate)(dense_output)
 
-        if self.label_smoothing > 0:
-            outputs = keras.layers.Dense(
-                self.num_classes,
-                activation='softmax',
-                name='classification'
-            )(dense_output)
-        else:
-            outputs = keras.layers.Dense(
-                self.num_classes,
-                activation='softmax',
-                name='classification'
-            )(dense_output)
+        outputs = keras.layers.Dense(
+            self.num_classes,
+            activation='softmax',
+            name='classification'
+        )(dense_output)
 
         model = keras.Model(inputs=inputs, outputs=outputs, name='ad_classifier')
 
@@ -118,7 +111,22 @@ class AdClassifier(LoggerMixin):
             raise ValueError(f"Unsupported optimizer: {optimizer}")
 
         if self.label_smoothing > 0 and loss == 'sparse_categorical_crossentropy':
-            loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+            # Custom loss with label smoothing for Keras 3.x
+            import tensorflow as tf
+
+            def sparse_categorical_crossentropy_with_smoothing(y_true, y_pred):
+                # Convert sparse labels to one-hot
+                num_classes = tf.shape(y_pred)[-1]
+                y_true_one_hot = tf.one_hot(tf.cast(y_true, tf.int32), depth=num_classes)
+
+                # Apply label smoothing
+                smoothing = self.label_smoothing
+                y_true_smooth = y_true_one_hot * (1 - smoothing) + smoothing / tf.cast(num_classes, tf.float32)
+
+                # Compute categorical crossentropy
+                return keras.losses.categorical_crossentropy(y_true_smooth, y_pred)
+
+            loss_fn = sparse_categorical_crossentropy_with_smoothing
         else:
             loss_fn = loss
 

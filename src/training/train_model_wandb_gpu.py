@@ -27,7 +27,7 @@ from src.utils.callbacks import (
 )
 from src.data import StratifiedDataSplitter, DataBalancer
 from src.data.preprocess import preprocess_data, get_processed_data_path
-from src.tokenization import WordPieceTokenizer
+from src.tokenization import WordPieceTokenizer, TokenizedDatasetCache
 from src.models import AdClassifier, calculate_class_weights
 
 
@@ -121,31 +121,115 @@ def main(config_path: str = "configs/default.yaml"):
     logger.info("\n[3/5] TOKENIZATION")
     logger.info("-" * 60)
 
-    tokenizer = WordPieceTokenizer(
-        vocab_size=config.tokenization.vocab_size,
-        max_length=config.tokenization.max_length,
+    # Initialize tokenized dataset cache manager
+    dataset_cache = TokenizedDatasetCache(
+        cache_dir=config.tokenization.tokenized_cache_dir,
         verbose=True
     )
-    tokenizer.train(
-        train_data[clean_text_col],
-        use_cache=config.tokenization.use_cached_tokenizer
+
+    # Compute cache key based on all relevant configuration
+    split_config = {
+        'val_size': config.data.val_size,
+        'test_size': config.data.test_size,
+        'random_state': config.data.random_state,
+    }
+    cache_key = dataset_cache.compute_cache_key(
+        data_config=config.data,
+        tokenization_config=config.tokenization,
+        split_config=split_config,
+        balancing_config=config.balancing if balancer else None
     )
 
-    logger.info(f"Vocabulary size: {tokenizer.get_vocab_size()}")
-    logger.info(f"Max sequence length: {tokenizer.max_length}")
+    # Try to load from cache
+    use_cache = config.tokenization.use_tokenized_cache
+    cache_loaded = False
 
-    X_train = tokenizer.encode_batch(train_data[clean_text_col].tolist())
-    X_val = tokenizer.encode_batch(val_data[clean_text_col].tolist())
-    X_test = tokenizer.encode_batch(test_data[clean_text_col].tolist())
+    if use_cache and dataset_cache.exists(cache_key):
+        try:
+            logger.info(f"Loading tokenized datasets from cache: {cache_key}")
+            X_train, X_val, X_test, y_train, y_val, y_test, cache_metadata = dataset_cache.load(cache_key)
 
-    unique_classes = sorted(data[class_col].unique())
-    class_map = {old_id: new_id for new_id, old_id in enumerate(unique_classes)}
+            # Load class_map from metadata (convert string keys back to int)
+            class_map = {int(k): v for k, v in cache_metadata['class_map'].items()}
+            num_classes = cache_metadata['num_classes']
 
-    y_train = np.array([class_map[x] for x in train_data[class_col].values])
-    y_val = np.array([class_map[x] for x in val_data[class_col].values])
-    y_test = np.array([class_map[x] for x in test_data[class_col].values])
+            # Still need to train/load tokenizer for model vocab_size
+            tokenizer = WordPieceTokenizer(
+                vocab_size=config.tokenization.vocab_size,
+                max_length=config.tokenization.max_length,
+                verbose=True
+            )
+            tokenizer.train(
+                train_data[clean_text_col],
+                use_cache=config.tokenization.use_cached_tokenizer
+            )
 
-    num_classes = len(unique_classes)
+            logger.info(f"Vocabulary size: {tokenizer.get_vocab_size()}")
+            logger.info(f"Max sequence length: {tokenizer.max_length}")
+            cache_loaded = True
+
+        except (FileNotFoundError, ValueError) as e:
+            logger.warning(f"Failed to load cache: {e}")
+            logger.info("Will perform tokenization from scratch")
+            cache_loaded = False
+
+    if not cache_loaded:
+        # Cache miss or disabled - perform tokenization
+        logger.info("Performing tokenization...")
+
+        tokenizer = WordPieceTokenizer(
+            vocab_size=config.tokenization.vocab_size,
+            max_length=config.tokenization.max_length,
+            verbose=True
+        )
+        tokenizer.train(
+            train_data[clean_text_col],
+            use_cache=config.tokenization.use_cached_tokenizer
+        )
+
+        logger.info(f"Vocabulary size: {tokenizer.get_vocab_size()}")
+        logger.info(f"Max sequence length: {tokenizer.max_length}")
+
+        # Tokenize datasets
+        logger.info("Encoding training data...")
+        X_train = tokenizer.encode_batch(train_data[clean_text_col].tolist())
+        logger.info("Encoding validation data...")
+        X_val = tokenizer.encode_batch(val_data[clean_text_col].tolist())
+        logger.info("Encoding test data...")
+        X_test = tokenizer.encode_batch(test_data[clean_text_col].tolist())
+
+        # Encode labels
+        unique_classes = sorted(data[class_col].unique())
+        class_map = {old_id: new_id for new_id, old_id in enumerate(unique_classes)}
+
+        y_train = np.array([class_map[x] for x in train_data[class_col].values])
+        y_val = np.array([class_map[x] for x in val_data[class_col].values])
+        y_test = np.array([class_map[x] for x in test_data[class_col].values])
+
+        num_classes = len(unique_classes)
+
+        # Save to cache
+        if use_cache:
+            logger.info(f"Saving tokenized datasets to cache: {cache_key}")
+            metadata = {
+                'num_classes': num_classes,
+                'class_map': {k: v for k, v in class_map.items()},
+                'vocab_size': tokenizer.get_vocab_size(),
+                'max_length': tokenizer.max_length,
+                'train_samples': len(X_train),
+                'val_samples': len(X_val),
+                'test_samples': len(X_test),
+            }
+            dataset_cache.save(
+                cache_key=cache_key,
+                X_train=X_train,
+                X_val=X_val,
+                X_test=X_test,
+                y_train=y_train,
+                y_val=y_val,
+                y_test=y_test,
+                metadata=metadata
+            )
 
     logger.info(f"Tokenized data shapes: X_train={X_train.shape}, y_train={y_train.shape}")
     logger.info(f"Number of classes: {num_classes}")
