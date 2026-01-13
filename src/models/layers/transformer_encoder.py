@@ -12,6 +12,8 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         num_heads: int,
         ff_dim: int,
         dropout_rate: float = 0.1,
+        attention_dropout: float = None,
+        ffn_dropout: float = None,
         activation: str = 'relu',
         layer_norm_epsilon: float = 1e-6,
         use_causal_mask: bool = False,
@@ -22,6 +24,9 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         self.num_heads = num_heads
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
+        # Allow custom dropout rates for attention and FFN, fallback to dropout_rate
+        self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
+        self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
         self.activation = activation
         self.layer_norm_epsilon = layer_norm_epsilon
         self.use_causal_mask = use_causal_mask
@@ -34,20 +39,20 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         self.attention = keras.layers.MultiHeadAttention(
             num_heads=num_heads,
             key_dim=self.key_dim,
-            dropout=dropout_rate
+            dropout=self.attention_dropout
         )
 
         self.ffn = keras.Sequential([
             keras.layers.Dense(ff_dim, activation=activation),
-            keras.layers.Dropout(dropout_rate),
+            keras.layers.Dropout(self.ffn_dropout),
             keras.layers.Dense(embed_dim)
         ])
 
         self.layernorm1 = keras.layers.LayerNormalization(epsilon=layer_norm_epsilon)
         self.layernorm2 = keras.layers.LayerNormalization(epsilon=layer_norm_epsilon)
 
-        self.dropout1 = keras.layers.Dropout(dropout_rate)
-        self.dropout2 = keras.layers.Dropout(dropout_rate)
+        self.dropout1 = keras.layers.Dropout(self.attention_dropout)
+        self.dropout2 = keras.layers.Dropout(self.ffn_dropout)
 
     def call(self, inputs, attention_mask=None, training=None):
         if self.use_causal_mask:
@@ -85,6 +90,8 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
             'num_heads': self.num_heads,
             'ff_dim': self.ff_dim,
             'dropout_rate': self.dropout_rate,
+            'attention_dropout': self.attention_dropout,
+            'ffn_dropout': self.ffn_dropout,
             'activation': self.activation,
             'layer_norm_epsilon': self.layer_norm_epsilon,
             'use_causal_mask': self.use_causal_mask

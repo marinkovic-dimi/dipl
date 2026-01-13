@@ -20,6 +20,10 @@ class AdClassifier(LoggerMixin):
         num_layers: int = 2,
         ff_dim: int = 2048,
         dropout_rate: float = 0.1,
+        embedding_dropout: float = None,
+        attention_dropout: float = None,
+        ffn_dropout: float = None,
+        dense_dropout: float = None,
         pooling_strategy: str = 'cls',
         activation: str = 'relu',
         use_class_weights: bool = False,
@@ -33,6 +37,11 @@ class AdClassifier(LoggerMixin):
         self.num_layers = num_layers
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
+        # Stratified dropout: allow custom rates for each layer type
+        self.embedding_dropout = embedding_dropout if embedding_dropout is not None else dropout_rate
+        self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
+        self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
+        self.dense_dropout = dense_dropout if dense_dropout is not None else dropout_rate
         self.pooling_strategy = pooling_strategy
         self.activation = activation
         self.use_class_weights = use_class_weights
@@ -49,7 +58,7 @@ class AdClassifier(LoggerMixin):
             maxlen=self.max_length,
             vocab_size=self.vocab_size,
             embed_dim=self.embed_dim,
-            dropout_rate=self.dropout_rate,
+            dropout_rate=self.embedding_dropout,
             name='embeddings'
         )(inputs)
 
@@ -59,6 +68,8 @@ class AdClassifier(LoggerMixin):
             num_heads=self.num_heads,
             ff_dim=self.ff_dim,
             dropout_rate=self.dropout_rate,
+            attention_dropout=self.attention_dropout,
+            ffn_dropout=self.ffn_dropout,
             activation=self.activation,
             name='transformer'
         )(embeddings)
@@ -75,7 +86,7 @@ class AdClassifier(LoggerMixin):
             name='dense_representation'
         )(pooled_output)
 
-        dense_output = keras.layers.Dropout(self.dropout_rate)(dense_output)
+        dense_output = keras.layers.Dropout(self.dense_dropout)(dense_output)
 
         outputs = keras.layers.Dense(
             self.num_classes,
@@ -207,6 +218,10 @@ class AdClassifier(LoggerMixin):
             'num_layers': self.num_layers,
             'ff_dim': self.ff_dim,
             'dropout_rate': self.dropout_rate,
+            'embedding_dropout': self.embedding_dropout,
+            'attention_dropout': self.attention_dropout,
+            'ffn_dropout': self.ffn_dropout,
+            'dense_dropout': self.dense_dropout,
             'pooling_strategy': self.pooling_strategy,
             'activation': self.activation,
             'use_class_weights': self.use_class_weights,

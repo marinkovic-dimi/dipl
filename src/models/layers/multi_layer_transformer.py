@@ -13,6 +13,8 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         num_heads: int,
         ff_dim: int,
         dropout_rate: float = 0.1,
+        attention_dropout: float = None,
+        ffn_dropout: float = None,
         activation: str = 'relu',
         **kwargs
     ):
@@ -22,6 +24,8 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         self.num_heads = num_heads
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
+        self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
+        self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
         self.activation = activation
 
         self.transformer_layers = [
@@ -30,6 +34,8 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
                 num_heads=num_heads,
                 ff_dim=ff_dim,
                 dropout_rate=dropout_rate,
+                attention_dropout=self.attention_dropout,
+                ffn_dropout=self.ffn_dropout,
                 activation=activation,
                 name=f'transformer_layer_{i}'
             )
@@ -52,6 +58,8 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
             'num_heads': self.num_heads,
             'ff_dim': self.ff_dim,
             'dropout_rate': self.dropout_rate,
+            'attention_dropout': self.attention_dropout,
+            'ffn_dropout': self.ffn_dropout,
             'activation': self.activation
         })
         return config

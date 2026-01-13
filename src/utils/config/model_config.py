@@ -8,6 +8,10 @@ class ModelConfig:
     num_layers: int = 4
     ff_dim: int = 512
     dropout_rate: float = 0.2
+    embedding_dropout: float = None  # If None, uses dropout_rate
+    attention_dropout: float = None   # If None, uses dropout_rate
+    ffn_dropout: float = None         # If None, uses dropout_rate
+    dense_dropout: float = None       # If None, uses dropout_rate
     pooling_strategy: str = "cls"
     label_smoothing: float = 0.0
 
