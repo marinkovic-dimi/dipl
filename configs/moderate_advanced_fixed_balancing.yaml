@@ -1,0 +1,126 @@
+project_name: "klasifikator"
+version: "1.0.0"
+experiment_name: "moderate_advanced_fixed_balancing_v1"
+
+data:
+  raw_data_path: "data/oglasi_za_treniranje.json"
+  processed_data_dir: "data/processed"
+
+  text_column: "text"
+  class_column: "group_id"
+  clean_text_column: "clean_text"
+
+  max_samples: 10000000
+  min_samples_per_class: 100
+  max_samples_per_class: 1000000
+  remove_ostalo_groups: false
+  ostalo_groups_file: "data/ostalo-grupe.csv"
+
+  # OPTIMIZED: Increased validation set for stability with 1497 classes
+  val_size: 0.15
+  test_size: 0.15
+  random_state: 42
+
+tokenization:
+  vocab_size: 15000
+  # OPTIMIZED: Increased max_length to reduce truncation
+  max_length: 40
+  min_frequency: 1
+  special_tokens:
+    - "[PAD]"
+    - "[CLS]"
+    - "[UNK]"
+    - "[SEP]"
+    - "[MASK]"
+  use_cached_tokenizer: true
+  tokenizer_cache_dir: "cache/tokenizers"
+  # Tokenized dataset caching enabled
+  use_tokenized_cache: true
+  tokenized_cache_dir: "cache/tokenized_datasets"
+
+model:
+  # OPTIMIZED: Balanced complexity
+  embedding_dim: 768
+  num_heads: 12
+  num_layers: 3
+  ff_dim: 3072
+
+  # ADVANCED: Stratified dropout with increasing rates through the network
+  # Base dropout_rate is used as fallback for any layer that doesn't specify custom rate
+  dropout_rate: 0.1
+
+  # Custom dropout rates per layer type:
+  # embedding_dropout: 0.1      # Lower at input (10%) - preserve input information
+  # attention_dropout: 0.15     # Moderate (15%) - regularize attention patterns
+  # ffn_dropout: 0.15           # Moderate (15%) - regularize feed-forward transformations
+  # dense_dropout: 0.25         # Higher at output (25%) - strong regularization before classification
+
+  # Effective dropout rate calculation (4 layers in series):
+  # P(no dropout) = (1-0.1) × (1-0.15) × (1-0.15) × (1-0.25) = 0.488
+  # Effective dropout = 1 - 0.488 = 51.2% (well-controlled!)
+
+  pooling_strategy: "attention"  # Better for multi-class classification
+  label_smoothing: 0.1           # NOW WORKS after bug fix!
+
+  # OPTIMIZED: Faster learning
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  batch_size: 128
+  epochs: 20
+
+  top_k: 5
+
+balancing:
+  strategy: "adaptive"
+
+  # FIXED: Much less aggressive balancing to retain more data
+  # Before: 5.6M → 1.8M samples (64% loss) = only 935 samples/class
+  # After: 5.6M → 4-5M samples (minimal loss) = 2,500-3,500 samples/class
+  target_threshold: 10000       # ↑ from 3000 (keep more data from large classes)
+  target_threshold_small: 500   # ↑ from 250 (boost small classes more)
+  increase_factor: 0.3          # ↑ from 0.15 (more aggressive oversampling)
+  decrease_factor: 0.8          # ↑ from 0.5 (less reduction - keep 80% of data!)
+  decrease_factor_small: 0.8    # ↑ from 0.5 (consistent with main decrease)
+
+  tier_limits:
+    small: 100
+    medium: 1000
+    large: 5000
+    xlarge: 15000
+    xxlarge: 40000
+    max: 100000
+
+training:
+  save_dir: "experiments"
+  model_name: "klasifikator_moderate_advanced_fixed_balancing"
+  save_best_only: true
+  patience: 10           # ↑ from 7 (more patience before early stopping)
+  monitor: "val_loss"
+  mode: "min"
+
+  reduce_lr_factor: 0.5
+  reduce_lr_patience: 5  # ↑ from 3 (don't reduce LR too quickly)
+  min_lr: 0.000001
+
+  log_level: "INFO"
+  log_to_file: true
+  log_dir: "logs"
+
+  checkpoint_freq: "epoch"
+  save_frequency: 1
+
+wandb:
+  enabled: true
+  project: "klasifikator"
+  entity: null
+  name: "moderate_advanced_fixed_balancing_v1"
+  tags:
+    - "transformer"
+    - "serbian"
+    - "advanced-dropout"
+    - "fixed-balancing"
+  notes: "FIXED BALANCING: Conservative balancing (10K threshold, 0.8 decrease_factor) retains 4-5M samples vs 1.8M before. Should enable learning (loss 7.0 → 3.5 in 10 epochs). Includes stratified dropout (51.2%), label_smoothing fix, increased patience."
+  log_model: true
+  log_gradients: false
+  log_frequency: 100
+  save_code: true

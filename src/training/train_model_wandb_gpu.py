@@ -109,6 +109,17 @@ def main(config_path: str = "configs/default.yaml"):
         logger.info("\n[2.5/5] BALANCING TRAINING DATA")
         logger.info("-" * 60)
 
+        # Get unique classes for statistics
+        unique_classes = sorted(data[class_col].unique())
+        num_classes = len(unique_classes)
+
+        # Log BEFORE balancing
+        original_train_size = len(train_data)
+        logger.info(f"Data sizes BEFORE balancing:")
+        logger.info(f"  Total train samples: {original_train_size:,}")
+        logger.info(f"  Number of classes: {num_classes}")
+        logger.info(f"  Avg per class: {original_train_size / num_classes:.0f}")
+
         balancer = DataBalancer(
             config=config.balancing,
             class_column=class_col,
@@ -116,7 +127,14 @@ def main(config_path: str = "configs/default.yaml"):
         )
         train_data = balancer.balance(train_data)
 
-        logger.info(f"Balanced train size: {len(train_data)}")
+        # Log AFTER balancing
+        balanced_train_size = len(train_data)
+        data_retained_pct = 100 * balanced_train_size / original_train_size
+        logger.info(f"\nData sizes AFTER balancing:")
+        logger.info(f"  Total train samples: {balanced_train_size:,}")
+        logger.info(f"  Avg per class: {balanced_train_size / num_classes:.0f}")
+        logger.info(f"  Data retained: {data_retained_pct:.1f}%")
+        logger.info(f"  Data lost: {100 - data_retained_pct:.1f}%")
 
     logger.info("\n[3/5] TOKENIZATION")
     logger.info("-" * 60)
