@@ -9,6 +9,7 @@ from .model_config import ModelConfig
 from .balancing_config import BalancingConfig
 from .training_config import TrainingConfig
 from .wandb_config import WandbConfig
+from .inference_config import InferenceConfig
 
 
 @dataclass
@@ -24,6 +25,7 @@ class Config:
     balancing: BalancingConfig = field(default_factory=BalancingConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
     wandb: WandbConfig = field(default_factory=WandbConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
     def __post_init__(self):
         if self.experiment_name is None:
@@ -43,8 +45,10 @@ class Config:
         self.data.ostalo_groups_file = resolve(self.data.ostalo_groups_file)
 
         self.tokenization.tokenizer_cache_dir = resolve(self.tokenization.tokenizer_cache_dir)
-        
+
         self.training.save_dir = resolve(self.training.save_dir)
         self.training.log_dir = resolve(self.training.log_dir)
+
+        self.inference.model_checkpoint_dir = resolve(self.inference.model_checkpoint_dir)
 
         return self
