@@ -25,6 +25,8 @@ class AdClassifier(LoggerMixin):
         ffn_dropout: float = None,
         dense_dropout: float = None,
         pooling_strategy: str = 'cls',
+        use_intermediate_dense: bool = True,
+        intermediate_dim: int = None,
         activation: str = 'relu',
         use_class_weights: bool = False,
         label_smoothing: float = 0.0
@@ -43,6 +45,8 @@ class AdClassifier(LoggerMixin):
         self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
         self.dense_dropout = dense_dropout if dense_dropout is not None else dropout_rate
         self.pooling_strategy = pooling_strategy
+        self.use_intermediate_dense = use_intermediate_dense
+        self.intermediate_dim = intermediate_dim if intermediate_dim is not None else embed_dim // 2
         self.activation = activation
         self.use_class_weights = use_class_weights
         self.label_smoothing = label_smoothing
@@ -80,19 +84,30 @@ class AdClassifier(LoggerMixin):
             name='pooling'
         )(transformer_output)
 
-        dense_output = keras.layers.Dense(
-            self.embed_dim // 2,
-            activation='relu',
-            name='dense_representation'
-        )(pooled_output)
+        # CONDITIONAL: Add intermediate dense layer or skip it
+        if self.use_intermediate_dense:
+            # With intermediate layer (current default behavior)
+            dense_output = keras.layers.Dense(
+                self.intermediate_dim,
+                activation='relu',
+                name='dense_representation'
+            )(pooled_output)
 
-        dense_output = keras.layers.Dropout(self.dense_dropout)(dense_output)
+            dense_output = keras.layers.Dropout(self.dense_dropout)(dense_output)
 
-        outputs = keras.layers.Dense(
-            self.num_classes,
-            activation='softmax',
-            name='classification'
-        )(dense_output)
+            # Classification from intermediate representation
+            outputs = keras.layers.Dense(
+                self.num_classes,
+                activation='softmax',
+                name='classification'
+            )(dense_output)
+        else:
+            # Direct classification (BERT standard)
+            outputs = keras.layers.Dense(
+                self.num_classes,
+                activation='softmax',
+                name='classification'
+            )(pooled_output)
 
         model = keras.Model(inputs=inputs, outputs=outputs, name='ad_classifier')
 
@@ -223,6 +238,8 @@ class AdClassifier(LoggerMixin):
             'ffn_dropout': self.ffn_dropout,
             'dense_dropout': self.dense_dropout,
             'pooling_strategy': self.pooling_strategy,
+            'use_intermediate_dense': self.use_intermediate_dense,
+            'intermediate_dim': self.intermediate_dim,
             'activation': self.activation,
             'use_class_weights': self.use_class_weights,
             'label_smoothing': self.label_smoothing

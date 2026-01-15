@@ -13,6 +13,8 @@ class ModelConfig:
     ffn_dropout: float = None         # If None, uses dropout_rate
     dense_dropout: float = None       # If None, uses dropout_rate
     pooling_strategy: str = "cls"
+    use_intermediate_dense: bool = True  # If False, skip intermediate layer
+    intermediate_dim: int = None  # If None, uses embedding_dim // 2
     label_smoothing: float = 0.0
 
     learning_rate: float = 1e-4
