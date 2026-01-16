@@ -25,7 +25,7 @@ tokenization:
   vocab_size: 15000
   # OPTIMIZED: Increased max_length to reduce truncation
   max_length: 40
-  min_frequency: 1
+  min_frequency: 2
   special_tokens:
     - "[PAD]"
     - "[CLS]"
@@ -63,10 +63,10 @@ model:
   label_smoothing: 0.1           # NOW WORKS after bug fix!
 
   # OPTIMIZED: Faster learning
-  learning_rate: 0.0003
+  learning_rate: 0.000001
   weight_decay: 0.01
-  batch_size: 128
-  epochs: 20
+  batch_size: 256
+  epochs: 50
 
   top_k: 5
 
@@ -76,8 +76,8 @@ balancing:
   # FIXED: Much less aggressive balancing to retain more data
   # Before: 5.6M → 1.8M samples (64% loss) = only 935 samples/class
   # After: 5.6M → 4-5M samples (minimal loss) = 2,500-3,500 samples/class
-  target_threshold: 10000       # ↑ from 3000 (keep more data from large classes)
-  target_threshold_small: 500   # ↑ from 250 (boost small classes more)
+  target_threshold: 50000       # ↑ from 3000 (keep more data from large classes)
+  target_threshold_small: 1000   # ↑ from 250 (boost small classes more)
   increase_factor: 0.3          # ↑ from 0.15 (more aggressive oversampling)
   decrease_factor: 0.8          # ↑ from 0.5 (less reduction - keep 80% of data!)
   decrease_factor_small: 0.8    # ↑ from 0.5 (consistent with main decrease)
@@ -92,15 +92,15 @@ balancing:
 
 training:
   save_dir: "experiments"
-  model_name: "klasifikator_moderate_advanced_fixed_balancing"
+  model_name: "klasifikator_last"
   save_best_only: true
-  patience: 10           # ↑ from 7 (more patience before early stopping)
+  patience: 5          # ↑ from 7 (more patience before early stopping)
   monitor: "val_loss"
   mode: "min"
 
-  reduce_lr_factor: 0.5
-  reduce_lr_patience: 5  # ↑ from 3 (don't reduce LR too quickly)
-  min_lr: 0.000001
+  reduce_lr_factor: 0.1
+  reduce_lr_patience: 3  # ↑ from 3 (don't reduce LR too quickly)
+  min_lr: 0.000000000001
 
   log_level: "INFO"
   log_to_file: true
@@ -119,7 +119,8 @@ wandb:
     - "serbian"
     - "advanced-dropout"
     - "fixed-balancing"
-  notes: "FIXED BALANCING: Conservative balancing (10K threshold, 0.8 decrease_factor) retains 4-5M samples vs 1.8M before. Should enable learning (loss 7.0 → 3.5 in 10 epochs). Includes stratified dropout (51.2%), label_smoothing fix, increased patience."
+    - "smaller-lr"
+  notes: "Bigger dataset; smaller learning rate; bigger batch; more epochs;"
   log_model: true
   log_gradients: false
   log_frequency: 100
