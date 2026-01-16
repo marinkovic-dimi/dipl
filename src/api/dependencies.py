@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from functools import lru_cache
 
-from src.utils.config import ConfigManager
 from src.data.preprocessors import SerbianTextPreprocessor
+from .config import ApiConfigLoader, ModelInfo
 from .services import ModelLoader, PredictionService
 
 # Get project root (3 levels up from this file: src/api/dependencies.py -> src/api -> src -> project_root)
@@ -13,15 +13,15 @@ _project_root = Path(__file__).resolve().parent.parent.parent
 
 
 @lru_cache()
-def get_config():
+def get_api_config():
     """
-    Loads and caches API configuration.
+    Učitava i kešira API konfiguraciju.
 
-    Returns cached config on subsequent calls (singleton pattern).
-    Config path can be overridden via CONFIG_PATH environment variable.
+    Vraća keširan config nakon prvog poziva (singleton pattern).
+    Putanja do konfiga može biti override-ovana preko CONFIG_PATH env variable.
 
     Returns:
-        Config object with inference settings
+        InferenceConfig sa API postavkama (host, port, model path, itd.)
     """
     config_path = os.getenv('CONFIG_PATH', 'configs/api.yaml')
 
@@ -29,10 +29,32 @@ def get_config():
     if not Path(config_path).is_absolute():
         config_path = _project_root / config_path
 
-    config = ConfigManager.from_yaml(str(config_path), project_root=_project_root)
-    config.resolve_paths(_project_root)
+    api_config = ApiConfigLoader.from_yaml(str(config_path), _project_root)
 
-    return config
+    return api_config
+
+
+@lru_cache()
+def get_model_info() -> ModelInfo:
+    """
+    Učitava model informacije iz checkpoint-a.
+
+    Učitava sve model parametre (architecture, tokenization)
+    iz checkpoint foldera (config.yaml + metadata.json).
+
+    Returns:
+        ModelInfo sa kompletnim model parametrima
+
+    Raises:
+        RuntimeError: Ako checkpoint fajlovi nedostaju
+    """
+    api_config = get_api_config()
+    checkpoint_dir = Path(api_config.model_checkpoint_dir)
+
+    loader = ModelLoader(checkpoint_dir)
+    model_info = loader.load_model_info()
+
+    return model_info
 
 
 @lru_cache()
@@ -55,8 +77,8 @@ def get_model_checkpoint_dir() -> str:
         return str(checkpoint_path)
 
     # Use config value
-    config = get_config()
-    return config.inference.model_checkpoint_dir
+    api_config = get_api_config()
+    return api_config.model_checkpoint_dir
 
 
 @lru_cache()
@@ -79,8 +101,9 @@ def get_prediction_service() -> PredictionService:
         FileNotFoundError: If checkpoint directory or required files don't exist
         RuntimeError: If model loading fails
     """
-    config = get_config()
-    checkpoint_dir = Path(get_model_checkpoint_dir())
+    api_config = get_api_config()
+    model_info = get_model_info()  # Učitaj model info
+    checkpoint_dir = Path(api_config.model_checkpoint_dir)
 
     # Load model artifacts
     loader = ModelLoader(checkpoint_dir)
@@ -107,19 +130,8 @@ def get_prediction_service() -> PredictionService:
         tokenizer=tokenizer,
         preprocessor=preprocessor,
         class_map=class_map,
-        top_k=config.inference.top_k,
+        top_k=api_config.top_k,
         category_names_file=str(category_names_file)
     )
 
     return service
-
-
-def get_api_config():
-    """
-    Gets API configuration settings.
-
-    Returns:
-        InferenceConfig with API settings (host, port, CORS, etc.)
-    """
-    config = get_config()
-    return config.inference

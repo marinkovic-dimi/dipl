@@ -2,12 +2,15 @@
 
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from src.models import AdClassifier
 from src.tokenization import WordPieceTokenizer
 from src.utils.config import ConfigManager
 from src.utils.logging import LoggerMixin
+
+if TYPE_CHECKING:
+    from ..config import ModelInfo
 
 
 class ModelLoader(LoggerMixin):
@@ -102,6 +105,65 @@ class ModelLoader(LoggerMixin):
         except Exception as e:
             self.logger.warning(f"Failed to load config.yaml: {e}")
             return {}
+
+    def load_model_info(self) -> 'ModelInfo':
+        """
+        Učitava kompletne model informacije iz checkpoint-a.
+
+        Kombinuje podatke iz:
+        - config.yaml (architecture parametri)
+        - metadata.json (training rezultati)
+
+        Returns:
+            ModelInfo sa svim model parametrima
+
+        Raises:
+            RuntimeError: Ako potrebni fajlovi nedostaju
+        """
+        from ..config import ModelInfo
+
+        # Učitaj config.yaml
+        config = self.load_config()
+        if not config or not hasattr(config, 'model'):
+            raise RuntimeError(
+                f"config.yaml missing or invalid in {self.checkpoint_dir}. "
+                "Cannot load model parameters."
+            )
+
+        # Učitaj metadata.json (optional)
+        metadata = self.load_metadata()
+        if not metadata:
+            self.logger.warning("metadata.json not found, using config only")
+            metadata = {}
+
+        # Kreiraj ModelInfo
+        model_info = ModelInfo(
+            # Tokenization (iz config)
+            vocab_size=config.tokenization.vocab_size,
+            max_length=config.tokenization.max_length,
+
+            # Model architecture (iz config)
+            embedding_dim=config.model.embedding_dim,
+            num_heads=config.model.num_heads,
+            num_layers=config.model.num_layers,
+            ff_dim=config.model.ff_dim,
+            dropout_rate=config.model.dropout_rate,
+            pooling_strategy=config.model.pooling_strategy,
+            label_smoothing=config.model.label_smoothing,
+
+            # Metadata (iz metadata.json sa fallbacks)
+            num_classes=metadata.get('num_classes', len(self.load_class_map())),
+            experiment_name=metadata.get('experiment_name', config.experiment_name),
+            timestamp=metadata.get('timestamp', config.timestamp),
+            test_accuracy=metadata.get('test_accuracy'),
+            test_top3_accuracy=metadata.get('test_top3_accuracy'),
+
+            # Putanje
+            checkpoint_dir=self.checkpoint_dir
+        )
+
+        self.logger.info(f"Loaded model info: {model_info.experiment_name}")
+        return model_info
 
     def load_model(self) -> AdClassifier:
         """

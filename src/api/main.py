@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from src.utils.logging import setup_logging, get_logger
 from .routers import prediction_router
-from .dependencies import get_api_config, get_prediction_service
+from .dependencies import get_api_config, get_prediction_service, get_model_info
 
 # Setup logging
 setup_logging(log_level="INFO")
@@ -75,27 +75,34 @@ async def startup_event():
     logger.info("=" * 60)
 
     try:
-        config = get_api_config()
+        api_config = get_api_config()
         logger.info(f"API Configuration:")
-        logger.info(f"  - Host: {config.host}")
-        logger.info(f"  - Port: {config.port}")
-        logger.info(f"  - Top-K: {config.top_k}")
-        logger.info(f"  - Model: {config.model_checkpoint_dir}")
+        logger.info(f"  - Host: {api_config.host}")
+        logger.info(f"  - Port: {api_config.port}")
+        logger.info(f"  - Top-K: {api_config.top_k}")
+        logger.info(f"  - Model: {api_config.model_checkpoint_dir}")
 
         # Trigger model loading (via dependency injection)
         # This preloads the model to avoid delay on first request
         logger.info("\nPreloading model...")
         service = get_prediction_service()
+        model_info = get_model_info()
 
         stats = service.get_stats()
-        logger.info(f"\nModel Statistics:")
+        logger.info(f"\nModel Information:")
+        logger.info(f"  - Experiment: {model_info.experiment_name}")
+        logger.info(f"  - Timestamp: {model_info.timestamp}")
         logger.info(f"  - Classes: {stats['num_classes']}")
         logger.info(f"  - Vocab Size: {stats['vocab_size']}")
         logger.info(f"  - Max Length: {stats['max_sequence_length']}")
+        if model_info.test_accuracy:
+            logger.info(f"  - Test Accuracy: {model_info.test_accuracy:.2%}")
+        if model_info.test_top3_accuracy:
+            logger.info(f"  - Top-3 Accuracy: {model_info.test_top3_accuracy:.2%}")
 
         logger.info("\n" + "=" * 60)
         logger.info("✓ API Ready to serve predictions!")
-        logger.info(f"✓ Documentation: http://{config.host}:{config.port}/docs")
+        logger.info(f"✓ Documentation: http://{api_config.host}:{api_config.port}/docs")
         logger.info("=" * 60)
 
     except Exception as e:
