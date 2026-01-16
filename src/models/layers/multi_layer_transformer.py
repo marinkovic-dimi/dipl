@@ -16,6 +16,8 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         attention_dropout: float = None,
         ffn_dropout: float = None,
         activation: str = 'relu',
+        attention_dropout: float = None,
+        ffn_dropout: float = None,
         **kwargs
     ):
         super(MultiLayerTransformer, self).__init__(**kwargs)
@@ -27,6 +29,9 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
         self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
         self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
         self.activation = activation
+        # Store these for compatibility with saved models, but use dropout_rate as fallback
+        self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
+        self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
 
         self.transformer_layers = [
             TransformerEncoder(
@@ -58,9 +63,9 @@ class MultiLayerTransformer(keras.layers.Layer, LoggerMixin):
             'num_heads': self.num_heads,
             'ff_dim': self.ff_dim,
             'dropout_rate': self.dropout_rate,
+            'activation': self.activation,
             'attention_dropout': self.attention_dropout,
-            'ffn_dropout': self.ffn_dropout,
-            'activation': self.activation
+            'ffn_dropout': self.ffn_dropout
         })
         return config
 

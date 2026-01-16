@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -23,3 +24,11 @@ class ModelConfig:
     epochs: int = 10
 
     top_k: int = 3
+
+    # Legacy parameters from old configs (not used but needed for backward compatibility)
+    attention_dropout: Optional[float] = None
+    dense_dropout: Optional[float] = None
+    embedding_dropout: Optional[float] = None
+    ffn_dropout: Optional[float] = None
+    intermediate_dim: Optional[int] = None
+    use_intermediate_dense: bool = False
