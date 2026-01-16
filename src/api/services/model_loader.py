@@ -168,6 +168,10 @@ class ModelLoader(LoggerMixin):
         Raises:
             RuntimeError: If tokenizer loading fails
         """
+        # Load metadata to get max_length
+        metadata = self.load_metadata()
+        max_length = metadata.get('max_length', 100) if metadata else 100
+
         # Try multiple locations
         tokenizer_paths = []
 
@@ -191,7 +195,7 @@ class ModelLoader(LoggerMixin):
         for tokenizer_path in tokenizer_paths:
             if tokenizer_path.exists():
                 try:
-                    tokenizer = WordPieceTokenizer()
+                    tokenizer = WordPieceTokenizer(max_length=max_length)
                     tokenizer.load(str(tokenizer_path))
                     self.logger.info(f"Loaded tokenizer from: {tokenizer_path}")
 
@@ -229,11 +233,12 @@ class ModelLoader(LoggerMixin):
             with open(class_map_path, 'r', encoding='utf-8') as f:
                 class_map_raw = json.load(f)
 
-            # Convert string keys to integers
-            class_map = {int(k): v for k, v in class_map_raw.items()}
+            # class_map_raw has format: {"group_id": index}
+            # We need to invert it to: {index: "group_id"}
+            class_map = {v: k for k, v in class_map_raw.items()}
 
             self.logger.info(f"Loaded class map with {len(class_map)} classes")
-            self.logger.debug(f"Classes: {list(class_map.values())}")
+            self.logger.debug(f"Sample classes: {list(class_map.items())[:5]}")
 
             return class_map
 

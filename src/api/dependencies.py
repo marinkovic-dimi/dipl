@@ -98,13 +98,17 @@ def get_prediction_service() -> PredictionService:
         verbose=False
     )
 
+    # Path to category names file
+    category_names_file = _project_root / "data" / "category_name.json"
+
     # Create and return prediction service
     service = PredictionService(
         classifier=classifier,
         tokenizer=tokenizer,
         preprocessor=preprocessor,
         class_map=class_map,
-        top_k=config.inference.top_k
+        top_k=config.inference.top_k,
+        category_names_file=str(category_names_file)
     )
 
     return service

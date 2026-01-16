@@ -2,11 +2,13 @@
 
 from typing import Dict
 import numpy as np
+from pathlib import Path
 
 from src.models import AdClassifier
 from src.tokenization import WordPieceTokenizer
 from src.data.preprocessors import SerbianTextPreprocessor
 from src.utils.logging import LoggerMixin
+from src.utils.category_names import CategoryNameLoader
 from ..schemas.prediction_schemas import PredictionResponse, CategoryPrediction
 
 
@@ -35,13 +37,17 @@ class PredictionService(LoggerMixin):
         tokenizer: WordPieceTokenizer,
         preprocessor: SerbianTextPreprocessor,
         class_map: Dict[int, str],
-        top_k: int = 5
+        top_k: int = 5,
+        category_names_file: str = "data/category_name.json"
     ):
         self.classifier = classifier
         self.tokenizer = tokenizer
         self.preprocessor = preprocessor
         self.class_map = class_map
         self.top_k = top_k
+
+        # Load category names
+        self.category_loader = CategoryNameLoader(category_names_file)
 
         self.logger.info(f"PredictionService initialized with top_k={top_k}")
         self.logger.info(f"Model ready with {len(class_map)} classes")
@@ -92,21 +98,26 @@ class PredictionService(LoggerMixin):
             predictions = []
             for class_id, prob in zip(top_k_indices[0], top_k_probs[0]):
                 class_id_int = int(class_id)
-                category_name = self.class_map.get(
+                # Get group_id from class_map (index -> group_id)
+                group_id = self.class_map.get(
                     class_id_int,
-                    f"Unknown_Class_{class_id_int}"
+                    f"Unknown_{class_id_int}"
                 )
+
+                # Get combined name (group | category) from category loader
+                category_name = self.category_loader.get_name(group_id)
 
                 predictions.append(
                     CategoryPrediction(
-                        category=category_name,
+                        category_id=group_id,
+                        category_name=category_name,
                         confidence=float(prob)
                     )
                 )
 
             self.logger.info(
-                f"Prediction complete. Top prediction: {predictions[0].category} "
-                f"({predictions[0].confidence:.2%})"
+                f"Prediction complete. Top prediction: {predictions[0].category_name} "
+                f"(ID: {predictions[0].category_id}, {predictions[0].confidence:.2%})"
             )
 
             # Step 5: Create response

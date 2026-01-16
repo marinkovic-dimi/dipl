@@ -63,8 +63,8 @@ async def predict(
         result = service.predict_single(request.text)
 
         logger.info(
-            f"Prediction successful. Top: {result.predictions[0].category} "
-            f"({result.predictions[0].confidence:.2%})"
+            f"Prediction successful. Top: {result.predictions[0].category_name} "
+            f"(ID: {result.predictions[0].category_id}, {result.predictions[0].confidence:.2%})"
         )
 
         return result

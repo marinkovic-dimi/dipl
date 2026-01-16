@@ -26,7 +26,11 @@ class PredictionRequest(BaseModel):
 class CategoryPrediction(BaseModel):
     """Single category prediction with confidence score."""
 
-    category: str = Field(
+    category_id: str = Field(
+        ...,
+        description="Predicted category ID (group_id)"
+    )
+    category_name: str = Field(
         ...,
         description="Predicted category name"
     )
@@ -40,7 +44,8 @@ class CategoryPrediction(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "category": "Mobilni telefoni",
+                "category_id": "75",
+                "category_name": "Mobilni telefoni",
                 "confidence": 0.87
             }
         }
@@ -69,11 +74,11 @@ class PredictionResponse(BaseModel):
             "example": {
                 "text": "Нови Самсунг телефон А50, одлично стање, 150 евра",
                 "predictions": [
-                    {"category": "Mobilni telefoni", "confidence": 0.87},
-                    {"category": "Elektronika", "confidence": 0.08},
-                    {"category": "Oprema", "confidence": 0.03},
-                    {"category": "Tablet", "confidence": 0.01},
-                    {"category": "Ostalo", "confidence": 0.01}
+                    {"category_id": "75", "category_name": "Mobilni telefoni", "confidence": 0.87},
+                    {"category_id": "170", "category_name": "Elektronika", "confidence": 0.08},
+                    {"category_id": "180", "category_name": "Oprema", "confidence": 0.03},
+                    {"category_id": "250", "category_name": "Tablet", "confidence": 0.01},
+                    {"category_id": "300", "category_name": "Ostalo", "confidence": 0.01}
                 ],
                 "preprocessed_text": "samsung telefon a stanje evra"
             }

@@ -9,6 +9,7 @@ from .model_config import ModelConfig
 from .balancing_config import BalancingConfig
 from .training_config import TrainingConfig
 from .wandb_config import WandbConfig
+from .inference_config import InferenceConfig
 
 
 class ConfigManager:
@@ -43,9 +44,10 @@ class ConfigManager:
         balancing_config = BalancingConfig(**config_dict.get('balancing', {}))
         training_config = TrainingConfig(**config_dict.get('training', {}))
         wandb_config = WandbConfig(**config_dict.get('wandb', {}))
+        inference_config = InferenceConfig(**config_dict.get('inference', {}))
 
         main_config_dict = {k: v for k, v in config_dict.items()
-                           if k not in ['data', 'tokenization', 'model', 'balancing', 'training', 'wandb']}
+                           if k not in ['data', 'tokenization', 'model', 'balancing', 'training', 'wandb', 'inference']}
 
         return Config(
             data=data_config,
@@ -54,6 +56,7 @@ class ConfigManager:
             balancing=balancing_config,
             training=training_config,
             wandb=wandb_config,
+            inference=inference_config,
             **main_config_dict
         )
 
@@ -78,7 +81,8 @@ class ConfigManager:
             'model': config.model.__dict__,
             'balancing': config.balancing.__dict__,
             'training': config.training.__dict__,
-            'wandb': config.wandb.__dict__
+            'wandb': config.wandb.__dict__,
+            'inference': config.inference.__dict__
         }
 
     def create_default_config(self) -> Config:
