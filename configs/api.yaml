@@ -1,23 +1,11 @@
-# Serbian Ad Classifier API Configuration
-#
-# Napomena: Svi model/tokenization parametri se automatski učitavaju
-# iz model checkpoint direktorijuma (config.yaml + metadata.json).
-# Ovde se nalaze samo API-specifične postavke.
-
 project_name: "klasifikator-api"
 version: "1.0.0"
 
-# API Konfiguracija
 inference:
-  # Model checkpoint direktorijum
-  # (sadrži: config.yaml, metadata.json, classifier.keras, tokenizer.json, class_map.json)
   model_checkpoint_dir: "experiments/model_wandb_20260115_213548"
-
-  # Server postavke
   host: "0.0.0.0"
   port: 8000
   enable_cors: true
 
-  # Inference postavke
-  top_k: 5  # Broj top predikcija koje se vraćaju
-  batch_size: 32  # Batch size za batch predikcije (future use)
+  top_k: 5  
+  batch_size: 32 

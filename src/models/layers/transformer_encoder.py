@@ -24,7 +24,6 @@ class TransformerEncoder(keras.layers.Layer, LoggerMixin):
         self.num_heads = num_heads
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
-        # Allow custom dropout rates for attention and FFN, fallback to dropout_rate
         self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
         self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
         self.activation = activation

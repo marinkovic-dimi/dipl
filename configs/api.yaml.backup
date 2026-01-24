@@ -1,7 +1,6 @@
 project_name: "klasifikator-api"
 version: "1.0.0"
 
-# Inference/API configuration
 inference:
   model_checkpoint_dir: "experiments/model_wandb_20260115_213548"
   host: "0.0.0.0"
@@ -10,12 +9,10 @@ inference:
   batch_size: 32
   enable_cors: true
 
-# Required for preprocessing (minimal config)
 data:
   text_column: "text"
   class_column: "group_id"
 
-# Required for tokenization (will be loaded from checkpoint)
 tokenization:
   vocab_size: 15000
   max_length: 40
@@ -29,7 +26,6 @@ tokenization:
   use_cached_tokenizer: false
   tokenizer_cache_dir: "cache/tokenizers"
 
-# Model architecture (will be loaded from checkpoint config)
 model:
   embedding_dim: 768
   num_heads: 12
@@ -40,7 +36,6 @@ model:
   label_smoothing: 0.1
   top_k: 5
 
-# Minimal dummy configs (not used by API but required by Config class)
 balancing:
   strategy: "none"
 

@@ -106,7 +106,6 @@ class WandbCallback(keras.callbacks.Callback):
         if self.batch_count % self.log_frequency == 0:
             logs = logs or {}
 
-            # Log batch metrics with 'batch/' prefix
             batch_metrics = {'batch': self.batch_count}
             for key, value in logs.items():
                 if isinstance(value, (int, float)):

@@ -16,14 +16,12 @@ data:
   remove_ostalo_groups: false
   ostalo_groups_file: "data/ostalo-grupe.csv"
 
-  # OPTIMIZED: Increased validation set for stability with 1497 classes
   val_size: 0.15
   test_size: 0.15
   random_state: 42
 
 tokenization:
   vocab_size: 15000
-  # OPTIMIZED: Increased max_length to reduce truncation
   max_length: 96
   min_frequency: 2
   special_tokens:
@@ -34,35 +32,23 @@ tokenization:
     - "[MASK]"
   use_cached_tokenizer: true
   tokenizer_cache_dir: "cache/tokenizers"
-  # Tokenized dataset caching enabled
   use_tokenized_cache: true
   tokenized_cache_dir: "cache/tokenized_datasets"
 
 model:
-  # OPTIMIZED: Balanced complexity
   embedding_dim: 384
   num_heads: 8
   num_layers: 3
   ff_dim: 1024
 
-  # ADVANCED: Stratified dropout with increasing rates through the network
-  # Base dropout_rate is used as fallback for any layer that doesn't specify custom rate
   dropout_rate: 0.15
 
-  # Custom dropout rates per layer type:
-  embedding_dropout: 0.1      # Lower at input (10%) - preserve input information
-  attention_dropout: 0.15     # Moderate (15%) - regularize attention patterns
-  ffn_dropout: 0.15           # Moderate (15%) - regularize feed-forward transformations
-  dense_dropout: 0.25         # Higher at output (25%) - strong regularization before classification
-
-  # Effective dropout rate calculation (4 layers in series):
-  # P(no dropout) = (1-0.1) × (1-0.15) × (1-0.15) × (1-0.25) = 0.488
-  # Effective dropout = 1 - 0.488 = 51.2% (well-controlled!)
-
-  pooling_strategy: "attention"  # Better for multi-class classification
-  label_smoothing: 0.1           # NOW WORKS after bug fix!
-
-  # OPTIMIZED: Faster learning
+  embedding_dropout: 0.1      
+  attention_dropout: 0.15     
+  ffn_dropout: 0.15           
+  dense_dropout: 0.25         
+  pooling_strategy: "attention" 
+  label_smoothing: 0.1          
   learning_rate: 0.0003
   weight_decay: 0.01
   batch_size: 128
@@ -73,7 +59,6 @@ model:
 balancing:
   strategy: "adaptive"
 
-  # OPTIMIZED: More balanced approach
   target_threshold: 3000
   target_threshold_small: 250
   increase_factor: 0.15

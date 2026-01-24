@@ -16,14 +16,12 @@ data:
   remove_ostalo_groups: false
   ostalo_groups_file: "data/ostalo-grupe.csv"
 
-  # OPTIMIZED: Increased validation set for stability with 1497 classes
   val_size: 0.15
   test_size: 0.15
   random_state: 42
 
 tokenization:
   vocab_size: 15000
-  # OPTIMIZED: Increased max_length to reduce truncation
   max_length: 40
   min_frequency: 2
   special_tokens:
@@ -34,35 +32,20 @@ tokenization:
     - "[MASK]"
   use_cached_tokenizer: true
   tokenizer_cache_dir: "cache/tokenizers"
-  # Tokenized dataset caching enabled
   use_tokenized_cache: true
   tokenized_cache_dir: "cache/tokenized_datasets"
 
 model:
-  # OPTIMIZED: Balanced complexity
   embedding_dim: 768
   num_heads: 12
   num_layers: 3
   ff_dim: 3072
 
-  # ADVANCED: Stratified dropout with increasing rates through the network
-  # Base dropout_rate is used as fallback for any layer that doesn't specify custom rate
   dropout_rate: 0.1
 
-  # Custom dropout rates per layer type:
-  # embedding_dropout: 0.1      # Lower at input (10%) - preserve input information
-  # attention_dropout: 0.15     # Moderate (15%) - regularize attention patterns
-  # ffn_dropout: 0.15           # Moderate (15%) - regularize feed-forward transformations
-  # dense_dropout: 0.25         # Higher at output (25%) - strong regularization before classification
+  pooling_strategy: "attention"  
+  label_smoothing: 0.1           
 
-  # Effective dropout rate calculation (4 layers in series):
-  # P(no dropout) = (1-0.1) × (1-0.15) × (1-0.15) × (1-0.25) = 0.488
-  # Effective dropout = 1 - 0.488 = 51.2% (well-controlled!)
-
-  pooling_strategy: "attention"  # Better for multi-class classification
-  label_smoothing: 0.1           # NOW WORKS after bug fix!
-
-  # OPTIMIZED: Faster learning
   learning_rate: 0.000001
   weight_decay: 0.01
   batch_size: 256
@@ -72,15 +55,11 @@ model:
 
 balancing:
   strategy: "adaptive"
-
-  # FIXED: Much less aggressive balancing to retain more data
-  # Before: 5.6M → 1.8M samples (64% loss) = only 935 samples/class
-  # After: 5.6M → 4-5M samples (minimal loss) = 2,500-3,500 samples/class
-  target_threshold: 50000       # ↑ from 3000 (keep more data from large classes)
-  target_threshold_small: 1000   # ↑ from 250 (boost small classes more)
-  increase_factor: 0.3          # ↑ from 0.15 (more aggressive oversampling)
-  decrease_factor: 0.8          # ↑ from 0.5 (less reduction - keep 80% of data!)
-  decrease_factor_small: 0.8    # ↑ from 0.5 (consistent with main decrease)
+  target_threshold: 50000       
+  target_threshold_small: 1000   
+  increase_factor: 0.3          
+  decrease_factor: 0.8          
+  decrease_factor_small: 0.8    
 
   tier_limits:
     small: 100
@@ -94,12 +73,12 @@ training:
   save_dir: "experiments"
   model_name: "klasifikator_last"
   save_best_only: true
-  patience: 5          # ↑ from 7 (more patience before early stopping)
+  patience: 5          
   monitor: "val_loss"
   mode: "min"
 
   reduce_lr_factor: 0.1
-  reduce_lr_patience: 3  # ↑ from 3 (don't reduce LR too quickly)
+  reduce_lr_patience: 3  
   min_lr: 0.000000000001
 
   log_level: "INFO"

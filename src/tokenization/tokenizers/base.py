@@ -31,9 +31,6 @@ class EnhancedTokenizer(LoggerMixin):
         self.cache_dir = Path(cache_dir)
         self.verbose = verbose
 
-        # Removed: Do NOT add digits as special tokens - they should be learned as normal tokens
-        # self.special_tokens.extend([str(i) for i in range(10)])
-
         self.tokenizer = None
         self._is_trained = False
 
@@ -49,9 +46,7 @@ class EnhancedTokenizer(LoggerMixin):
         return self.cache_dir / f"{cache_key}.json"
 
     def _preprocess_text_for_tokenization(self, text: str) -> str:
-        # Add spaces around complete numbers (not individual digits)
         text = re.sub(r'(\d+)', r' \1 ', text)
-        # Clean up multiple spaces
         return re.sub(r'\s+', ' ', text).strip()
 
     def train(

@@ -1,5 +1,3 @@
-"""Prediction API router with endpoints for classification."""
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from src.utils.logging import get_logger
 
@@ -35,28 +33,6 @@ async def predict(
     request: PredictionRequest,
     service: PredictionService = Depends(get_prediction_service)
 ) -> PredictionResponse:
-    """
-    Predicts the category for a given advertisement text.
-
-    Returns top-5 predictions sorted by confidence (descending).
-
-    **Input:**
-    - Accepts Serbian text in Cyrillic or Latin script
-    - Text length: 1-5000 characters
-    - Automatically handles preprocessing (transliteration, stop words, etc.)
-
-    **Output:**
-    - Original text
-    - Top-5 category predictions with confidence scores [0, 1]
-    - Preprocessed text (for debugging)
-
-    **Example:**
-    ```json
-    {
-      "text": "Нови Самсунг телефон А50, одлично стање, 150 евра"
-    }
-    ```
-    """
     try:
         logger.info(f"Received prediction request: {request.text[:50]}...")
 
@@ -94,18 +70,7 @@ async def health_check(
     service: PredictionService = Depends(get_prediction_service),
     checkpoint_dir: str = Depends(get_model_checkpoint_dir)
 ) -> HealthResponse:
-    """
-    Health check endpoint.
-
-    Returns:
-    - API status
-    - Model loading status
-    - Loaded model checkpoint path
-
-    Use this endpoint to verify the API is ready before sending prediction requests.
-    """
     try:
-        # If we got here, service is loaded successfully (dependency injection)
         return HealthResponse(
             status="healthy",
             model_loaded=True,
@@ -128,16 +93,6 @@ async def health_check(
 async def get_stats(
     service: PredictionService = Depends(get_prediction_service)
 ) -> dict:
-    """
-    Returns prediction service statistics.
-
-    Provides information about:
-    - Number of classes
-    - Vocabulary size
-    - Maximum sequence length
-    - Available categories
-    - Top-k configuration
-    """
     try:
         stats = service.get_stats()
         return stats

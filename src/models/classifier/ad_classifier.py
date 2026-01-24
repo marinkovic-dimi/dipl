@@ -39,7 +39,6 @@ class AdClassifier(LoggerMixin):
         self.num_layers = num_layers
         self.ff_dim = ff_dim
         self.dropout_rate = dropout_rate
-        # Stratified dropout: allow custom rates for each layer type
         self.embedding_dropout = embedding_dropout if embedding_dropout is not None else dropout_rate
         self.attention_dropout = attention_dropout if attention_dropout is not None else dropout_rate
         self.ffn_dropout = ffn_dropout if ffn_dropout is not None else dropout_rate
@@ -84,9 +83,7 @@ class AdClassifier(LoggerMixin):
             name='pooling'
         )(transformer_output)
 
-        # CONDITIONAL: Add intermediate dense layer or skip it
         if self.use_intermediate_dense:
-            # With intermediate layer (current default behavior)
             dense_output = keras.layers.Dense(
                 self.intermediate_dim,
                 activation='relu',
@@ -95,14 +92,12 @@ class AdClassifier(LoggerMixin):
 
             dense_output = keras.layers.Dropout(self.dense_dropout)(dense_output)
 
-            # Classification from intermediate representation
             outputs = keras.layers.Dense(
                 self.num_classes,
                 activation='softmax',
                 name='classification'
             )(dense_output)
         else:
-            # Direct classification (BERT standard)
             outputs = keras.layers.Dense(
                 self.num_classes,
                 activation='softmax',
@@ -137,19 +132,15 @@ class AdClassifier(LoggerMixin):
             raise ValueError(f"Unsupported optimizer: {optimizer}")
 
         if self.label_smoothing > 0 and loss == 'sparse_categorical_crossentropy':
-            # Custom loss with label smoothing for Keras 3.x
             import tensorflow as tf
 
             def sparse_categorical_crossentropy_with_smoothing(y_true, y_pred):
-                # Convert sparse labels to one-hot
                 num_classes = tf.shape(y_pred)[-1]
                 y_true_one_hot = tf.one_hot(tf.cast(y_true, tf.int32), depth=num_classes)
 
-                # Apply label smoothing
                 smoothing = self.label_smoothing
                 y_true_smooth = y_true_one_hot * (1 - smoothing) + smoothing / tf.cast(num_classes, tf.float32)
 
-                # Compute categorical crossentropy
                 return keras.losses.categorical_crossentropy(y_true_smooth, y_pred)
 
             loss_fn = sparse_categorical_crossentropy_with_smoothing

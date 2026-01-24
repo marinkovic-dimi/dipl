@@ -14,40 +14,11 @@ from ..data.preprocess import get_preprocessing_hash
 
 
 class TokenizedDatasetCache(LoggerMixin):
-    """
-    Manages caching of tokenized datasets to avoid re-tokenization on every training run.
-
-    The cache key is computed from:
-    - Preprocessed data hash (from data config)
-    - Tokenizer configuration (vocab_size, max_length, min_frequency)
-    - Split configuration (val_size, test_size, random_state)
-    - Balancing configuration (if applied)
-
-    Storage format: .npy files for efficient numpy array storage
-    Cache structure:
-        cache_dir/
-          {cache_key}/
-            X_train.npy
-            X_val.npy
-            X_test.npy
-            y_train.npy
-            y_val.npy
-            y_test.npy
-            metadata.json
-    """
-
     def __init__(
         self,
         cache_dir: str = "cache/tokenized_datasets",
         verbose: bool = True
     ):
-        """
-        Initialize the tokenized dataset cache manager.
-
-        Args:
-            cache_dir: Directory to store cached datasets
-            verbose: Whether to log cache operations
-        """
         self.cache_dir = Path(cache_dir)
         self.verbose = verbose
 
@@ -58,24 +29,6 @@ class TokenizedDatasetCache(LoggerMixin):
         split_config: Dict[str, Any],
         balancing_config: Optional[BalancingConfig] = None
     ) -> str:
-        """
-        Compute cache key from all relevant configuration parameters.
-
-        The cache is invalidated when any of these change:
-        - Preprocessed data (via data config hash)
-        - Tokenization parameters (vocab_size, max_length, min_frequency)
-        - Split configuration (val_size, test_size, random_state)
-        - Balancing strategy (if enabled)
-
-        Args:
-            data_config: Data configuration
-            tokenization_config: Tokenization configuration
-            split_config: Dictionary with val_size, test_size, random_state
-            balancing_config: Optional balancing configuration
-
-        Returns:
-            8-character hash string as cache key
-        """
         hash_components = {
             'data_hash': get_preprocessing_hash(data_config),
             'vocab_size': tokenization_config.vocab_size,
@@ -86,7 +39,6 @@ class TokenizedDatasetCache(LoggerMixin):
             'random_state': split_config.get('random_state', 42),
         }
 
-        # Include balancing config if strategy is not "none"
         if balancing_config and balancing_config.strategy != "none":
             hash_components['balancing'] = {
                 'strategy': balancing_config.strategy,
@@ -96,7 +48,6 @@ class TokenizedDatasetCache(LoggerMixin):
                 'decrease_factor': balancing_config.decrease_factor,
             }
 
-        # Compute MD5 hash
         hash_str = str(sorted(hash_components.items()))
         cache_key = hashlib.md5(hash_str.encode()).hexdigest()[:8]
 
@@ -113,32 +64,9 @@ class TokenizedDatasetCache(LoggerMixin):
         return cache_key
 
     def get_cache_path(self, cache_key: str) -> Path:
-        """
-        Get cache directory path for given key.
-
-        Args:
-            cache_key: Cache key string
-
-        Returns:
-            Path to cache directory
-        """
         return self.cache_dir / cache_key
 
     def exists(self, cache_key: str) -> bool:
-        """
-        Check if valid cache exists for given key.
-
-        Validates that:
-        - Cache directory exists
-        - All required files are present
-        - metadata.json exists and is valid
-
-        Args:
-            cache_key: Cache key to check
-
-        Returns:
-            True if valid cache exists, False otherwise
-        """
         cache_path = self.get_cache_path(cache_key)
 
         if not cache_path.exists():
@@ -158,15 +86,6 @@ class TokenizedDatasetCache(LoggerMixin):
         return all_exist
 
     def _convert_numpy_types(self, obj: Any) -> Any:
-        """
-        Recursively convert numpy types to native Python types for JSON serialization.
-
-        Args:
-            obj: Object to convert (can be dict, list, numpy type, etc.)
-
-        Returns:
-            Object with all numpy types converted to native Python types
-        """
         if isinstance(obj, dict):
             return {self._convert_numpy_types(k): self._convert_numpy_types(v) for k, v in obj.items()}
         elif isinstance(obj, (list, tuple)):
@@ -193,30 +112,11 @@ class TokenizedDatasetCache(LoggerMixin):
         y_test: np.ndarray,
         metadata: Dict[str, Any]
     ) -> None:
-        """
-        Save tokenized datasets to cache.
-
-        Saves:
-        - 6 numpy arrays as .npy files (X_train, X_val, X_test, y_train, y_val, y_test)
-        - metadata.json with shapes, dtypes, class info, etc.
-
-        Args:
-            cache_key: Cache key for this dataset
-            X_train: Tokenized training data (num_samples, max_length)
-            X_val: Tokenized validation data
-            X_test: Tokenized test data
-            y_train: Training labels
-            y_val: Validation labels
-            y_test: Test labels
-            metadata: Metadata dictionary (num_classes, class_map, vocab_size, etc.)
-        """
         cache_path = self.get_cache_path(cache_key)
 
         try:
-            # Create cache directory
             cache_path.mkdir(parents=True, exist_ok=True)
 
-            # Save numpy arrays
             np.save(cache_path / 'X_train.npy', X_train)
             np.save(cache_path / 'X_val.npy', X_val)
             np.save(cache_path / 'X_test.npy', X_test)
@@ -224,7 +124,6 @@ class TokenizedDatasetCache(LoggerMixin):
             np.save(cache_path / 'y_val.npy', y_val)
             np.save(cache_path / 'y_test.npy', y_test)
 
-            # Enrich metadata with cache info
             metadata['cache_key'] = cache_key
             metadata['created_at'] = datetime.now().isoformat()
             metadata['shapes'] = {
@@ -240,7 +139,6 @@ class TokenizedDatasetCache(LoggerMixin):
                 'y': str(y_train.dtype)
             }
 
-            # Save metadata (convert numpy types to native Python types)
             metadata_serializable = self._convert_numpy_types(metadata)
             with open(cache_path / 'metadata.json', 'w', encoding='utf-8') as f:
                 json.dump(metadata_serializable, f, indent=2, ensure_ascii=False)
@@ -253,13 +151,11 @@ class TokenizedDatasetCache(LoggerMixin):
         except PermissionError as e:
             self.logger.error(f"Permission denied when saving cache: {e}")
             self.logger.error("Continuing without caching...")
-            # Clean up partial cache
             if cache_path.exists():
                 shutil.rmtree(cache_path, ignore_errors=True)
         except OSError as e:
             self.logger.error(f"OS error when saving cache: {e}")
             self.logger.error("Continuing without caching...")
-            # Clean up partial cache
             if cache_path.exists():
                 shutil.rmtree(cache_path, ignore_errors=True)
 
@@ -267,26 +163,12 @@ class TokenizedDatasetCache(LoggerMixin):
         self,
         cache_key: str
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict]:
-        """
-        Load tokenized datasets from cache.
-
-        Args:
-            cache_key: Cache key to load
-
-        Returns:
-            Tuple of (X_train, X_val, X_test, y_train, y_val, y_test, metadata)
-
-        Raises:
-            FileNotFoundError: If cache doesn't exist
-            ValueError: If cache is corrupted or invalid
-        """
         if not self.exists(cache_key):
             raise FileNotFoundError(f"Cache not found for key: {cache_key}")
 
         cache_path = self.get_cache_path(cache_key)
 
         try:
-            # Load numpy arrays
             X_train = np.load(cache_path / 'X_train.npy')
             X_val = np.load(cache_path / 'X_val.npy')
             X_test = np.load(cache_path / 'X_test.npy')
@@ -294,11 +176,9 @@ class TokenizedDatasetCache(LoggerMixin):
             y_val = np.load(cache_path / 'y_val.npy')
             y_test = np.load(cache_path / 'y_test.npy')
 
-            # Load metadata
             with open(cache_path / 'metadata.json', 'r', encoding='utf-8') as f:
                 metadata = json.load(f)
 
-            # Validate shapes match metadata
             expected_shapes = metadata.get('shapes', {})
             if expected_shapes:
                 assert list(X_train.shape) == expected_shapes.get('X_train', []), \
@@ -315,18 +195,11 @@ class TokenizedDatasetCache(LoggerMixin):
         except Exception as e:
             self.logger.error(f"Error loading cache: {e}")
             self.logger.warning(f"Cache corrupted for key {cache_key}, will re-tokenize")
-            # Clean up corrupted cache
             if cache_path.exists():
                 shutil.rmtree(cache_path, ignore_errors=True)
             raise ValueError(f"Corrupted cache: {e}")
 
     def clear_cache(self, cache_key: Optional[str] = None) -> None:
-        """
-        Clear cache for specific key or all cache.
-
-        Args:
-            cache_key: Optional cache key to clear. If None, clears all cache.
-        """
         if cache_key:
             cache_path = self.get_cache_path(cache_key)
             if cache_path.exists():
@@ -341,12 +214,6 @@ class TokenizedDatasetCache(LoggerMixin):
                     self.logger.info("Cleared all tokenized dataset cache")
 
     def list_cached_datasets(self) -> List[Dict[str, Any]]:
-        """
-        List all cached datasets with metadata.
-
-        Returns:
-            List of dictionaries with cache information
-        """
         cached = []
         if not self.cache_dir.exists():
             return cached

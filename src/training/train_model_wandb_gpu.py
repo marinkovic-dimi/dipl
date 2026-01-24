@@ -109,11 +109,9 @@ def main(config_path: str = "configs/default.yaml"):
         logger.info("\n[2.5/5] BALANCING TRAINING DATA")
         logger.info("-" * 60)
 
-        # Get unique classes for statistics
         unique_classes = sorted(data[class_col].unique())
         num_classes = len(unique_classes)
 
-        # Log BEFORE balancing
         original_train_size = len(train_data)
         logger.info(f"Data sizes BEFORE balancing:")
         logger.info(f"  Total train samples: {original_train_size:,}")
@@ -127,7 +125,6 @@ def main(config_path: str = "configs/default.yaml"):
         )
         train_data = balancer.balance(train_data)
 
-        # Log AFTER balancing
         balanced_train_size = len(train_data)
         data_retained_pct = 100 * balanced_train_size / original_train_size
         logger.info(f"\nData sizes AFTER balancing:")
@@ -139,13 +136,11 @@ def main(config_path: str = "configs/default.yaml"):
     logger.info("\n[3/5] TOKENIZATION")
     logger.info("-" * 60)
 
-    # Initialize tokenized dataset cache manager
     dataset_cache = TokenizedDatasetCache(
         cache_dir=config.tokenization.tokenized_cache_dir,
         verbose=True
     )
 
-    # Compute cache key based on all relevant configuration
     split_config = {
         'val_size': config.data.val_size,
         'test_size': config.data.test_size,
@@ -158,7 +153,6 @@ def main(config_path: str = "configs/default.yaml"):
         balancing_config=config.balancing if balancer else None
     )
 
-    # Try to load from cache
     use_cache = config.tokenization.use_tokenized_cache
     cache_loaded = False
 
@@ -167,11 +161,9 @@ def main(config_path: str = "configs/default.yaml"):
             logger.info(f"Loading tokenized datasets from cache: {cache_key}")
             X_train, X_val, X_test, y_train, y_val, y_test, cache_metadata = dataset_cache.load(cache_key)
 
-            # Load class_map from metadata (convert string keys back to int)
             class_map = {int(k): v for k, v in cache_metadata['class_map'].items()}
             num_classes = cache_metadata['num_classes']
 
-            # Still need to train/load tokenizer for model vocab_size
             tokenizer = WordPieceTokenizer(
                 vocab_size=config.tokenization.vocab_size,
                 max_length=config.tokenization.max_length,
@@ -192,7 +184,6 @@ def main(config_path: str = "configs/default.yaml"):
             cache_loaded = False
 
     if not cache_loaded:
-        # Cache miss or disabled - perform tokenization
         logger.info("Performing tokenization...")
 
         tokenizer = WordPieceTokenizer(
@@ -208,7 +199,6 @@ def main(config_path: str = "configs/default.yaml"):
         logger.info(f"Vocabulary size: {tokenizer.get_vocab_size()}")
         logger.info(f"Max sequence length: {tokenizer.max_length}")
 
-        # Tokenize datasets
         logger.info("Encoding training data...")
         X_train = tokenizer.encode_batch(train_data[clean_text_col].tolist())
         logger.info("Encoding validation data...")
@@ -216,7 +206,6 @@ def main(config_path: str = "configs/default.yaml"):
         logger.info("Encoding test data...")
         X_test = tokenizer.encode_batch(test_data[clean_text_col].tolist())
 
-        # Encode labels
         unique_classes = sorted(data[class_col].unique())
         class_map = {old_id: new_id for new_id, old_id in enumerate(unique_classes)}
 
@@ -226,7 +215,6 @@ def main(config_path: str = "configs/default.yaml"):
 
         num_classes = len(unique_classes)
 
-        # Save to cache
         if use_cache:
             logger.info(f"Saving tokenized datasets to cache: {cache_key}")
             metadata = {

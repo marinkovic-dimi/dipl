@@ -1,5 +1,3 @@
-"""Main FastAPI application for Serbian Advertisement Classifier."""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,37 +6,13 @@ from src.utils.logging import setup_logging, get_logger
 from .routers import prediction_router
 from .dependencies import get_api_config, get_prediction_service, get_model_info
 
-# Setup logging
 setup_logging(log_level="INFO")
 logger = get_logger(__name__)
 
-# Create FastAPI application
 app = FastAPI(
     title="Serbian Ad Classifier API",
     description="""
-API for classifying Serbian advertisements into categories using a transformer-based model.
-
-## Features
-- **Serbian Language Support**: Handles both Cyrillic and Latin scripts
-- **Top-5 Predictions**: Returns top 5 category predictions with confidence scores
-- **Automatic Preprocessing**: Transliteration, stop words removal, text normalization
-- **High Performance**: Transformer-based architecture with attention mechanisms
-
-## Usage
-1. Check `/api/v1/health` to verify the API is ready
-2. Send POST requests to `/api/v1/predict` with Serbian text
-3. Get top-5 category predictions with confidence scores
-
-## Example
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/api/v1/predict",
-    json={"text": "Нови Самсунг телефон А50, одлично стање"}
-)
-print(response.json())
-```
+        API for classifying Serbian advertisements into categories using a transformer-based model.
     """,
     version="1.0.0",
     docs_url="/docs",
@@ -46,14 +20,12 @@ print(response.json())
     openapi_url="/openapi.json"
 )
 
-
-# Configure CORS
 try:
     config = get_api_config()
     if config.enable_cors:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # In production, specify actual origins
+            allow_origins=["*"],  
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
@@ -63,13 +35,11 @@ except Exception as e:
     logger.warning(f"Failed to load CORS config: {e}")
 
 
-# Include routers
 app.include_router(prediction_router.router)
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Startup event handler - preloads model for faster first request."""
     logger.info("=" * 60)
     logger.info("Starting Serbian Ad Classifier API")
     logger.info("=" * 60)
@@ -82,8 +52,6 @@ async def startup_event():
         logger.info(f"  - Top-K: {api_config.top_k}")
         logger.info(f"  - Model: {api_config.model_checkpoint_dir}")
 
-        # Trigger model loading (via dependency injection)
-        # This preloads the model to avoid delay on first request
         logger.info("\nPreloading model...")
         service = get_prediction_service()
         model_info = get_model_info()
@@ -112,7 +80,6 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Shutdown event handler."""
     logger.info("Shutting down Serbian Ad Classifier API")
 
 
@@ -122,7 +89,6 @@ async def shutdown_event():
     description="Returns API information and links to documentation."
 )
 async def root():
-    """Root endpoint with API information."""
     return {
         "message": "Serbian Ad Classifier API",
         "version": "1.0.0",
@@ -139,14 +105,11 @@ async def root():
     description="Simple health check without loading model (faster than /api/v1/health)."
 )
 async def health():
-    """Basic health check endpoint."""
     return {"status": "ok"}
 
 
-# Custom exception handlers
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Global exception handler for unhandled errors."""
     logger.error(f"Unhandled error: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,

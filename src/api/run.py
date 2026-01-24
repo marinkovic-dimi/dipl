@@ -1,9 +1,6 @@
-"""Entrypoint script for running the FastAPI server."""
-
 import sys
 from pathlib import Path
 
-# Add project root to Python path
 _project_root = Path(__file__).resolve().parent.parent.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
@@ -13,7 +10,6 @@ from src.api.dependencies import get_api_config
 
 
 def main():
-    """Run the FastAPI application with uvicorn."""
     try:
         config = get_api_config()
 
@@ -24,7 +20,7 @@ def main():
             "src.api.main:app",
             host=config.host,
             port=config.port,
-            reload=False,  # Set to True for development (auto-reload on file changes)
+            reload=False,  
             log_level="info",
             access_log=True
         )

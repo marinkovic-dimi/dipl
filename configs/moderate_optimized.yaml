@@ -16,15 +16,13 @@ data:
   remove_ostalo_groups: false
   ostalo_groups_file: "data/ostalo-grupe.csv"
 
-  # OPTIMIZED: Increased validation set for stability with 1497 classes
-  val_size: 0.15  # was: 0.10
-  test_size: 0.15  # was: 0.10
+  val_size: 0.15  
+  test_size: 0.15 
   random_state: 42
 
 tokenization:
   vocab_size: 15000
-  # OPTIMIZED: Increased max_length to reduce truncation
-  max_length: 96  # was: 64
+  max_length: 96  
   min_frequency: 2
   special_tokens:
     - "[PAD]"
@@ -34,39 +32,34 @@ tokenization:
     - "[MASK]"
   use_cached_tokenizer: true
   tokenizer_cache_dir: "cache/tokenizers"
-  # NEW: Enable tokenized dataset caching (implemented)
   use_tokenized_cache: true
   tokenized_cache_dir: "cache/tokenized_datasets"
 
 model:
-  # OPTIMIZED: Reduced complexity for faster learning
-  embedding_dim: 384  # was: 512 (25% smaller)
+  embedding_dim: 384 
   num_heads: 8
-  num_layers: 3  # was: 4 (one less layer)
-  ff_dim: 1024  # was: 2048 (50% smaller)
+  num_layers: 3  
+  ff_dim: 1024  
 
-  # OPTIMIZED: Increased regularization
-  dropout_rate: 0.2  # was: 0.1 (2x more dropout)
-  pooling_strategy: "attention"  # was: "cls" (better for multi-class)
-  label_smoothing: 0.1  # was: 0 (NOW WORKS after bug fix!)
+  dropout_rate: 0.2  
+  pooling_strategy: "attention"  
+  label_smoothing: 0.1  
 
-  # OPTIMIZED: Faster learning
-  learning_rate: 0.0003  # was: 0.0001 (3x faster)
+  learning_rate: 0.0003  
   weight_decay: 0.01
-  batch_size: 128  # was: 64 (2x larger for stability)
-  epochs: 20  # was: 50 (sufficient with faster LR)
+  batch_size: 128  
+  epochs: 20  
 
   top_k: 5
 
 balancing:
   strategy: "adaptive"
 
-  # OPTIMIZED: More balanced approach
-  target_threshold: 3000  # was: 10000 (less aggressive)
-  target_threshold_small: 250  # was: 200
+  target_threshold: 3000  
+  target_threshold_small: 250  
   increase_factor: 0.15
-  decrease_factor: 0.5  # was: 0.35 (less reduction)
-  decrease_factor_small: 0.5  # was: 0.45
+  decrease_factor: 0.5  
+  decrease_factor_small: 0.5  
 
   tier_limits:
     small: 100
@@ -80,7 +73,7 @@ training:
   save_dir: "experiments"
   model_name: "klasifikator_moderate_optimized"
   save_best_only: true
-  patience: 7  # was: 5 (more patience with regularization)
+  patience: 7  
   monitor: "val_loss"
   mode: "min"
 
